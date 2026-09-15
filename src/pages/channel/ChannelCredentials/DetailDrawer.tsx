@@ -1,0 +1,86 @@
+import React, { useEffect, useState } from 'react';
+import { Alert, Descriptions, Drawer, Spin, Tag, Typography } from 'antd';
+import { channelApi, type ChannelCredentialDTO } from '@/api/channel';
+
+const { Text } = Typography;
+
+export interface DetailDrawerProps {
+  open: boolean;
+  credentialId: number | null;
+  onClose: () => void;
+}
+
+export const DetailDrawer: React.FC<DetailDrawerProps> = ({ open, credentialId, onClose }) => {
+  const [data, setData] = useState<ChannelCredentialDTO | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open && credentialId) {
+      let active = true;
+      setLoading(true);
+      channelApi
+        .getById(credentialId)
+        .then((res) => {
+          if (active) {
+            setData(res);
+          }
+        })
+        .catch((err) => {
+          console.error('获取渠道凭证详情失败', err);
+        })
+        .finally(() => {
+          if (active) {
+            setLoading(false);
+          }
+        });
+
+      return () => {
+        active = false;
+      };
+    } else {
+      setData(null);
+    }
+  }, [open, credentialId]);
+
+  return (
+    <Drawer title="渠道凭证详情" placement="right" width={560} open={open} onClose={onClose}>
+      <Spin spinning={loading}>
+        {data ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <Alert
+              type="info"
+              showIcon
+              message="安全保护说明"
+              description="根据平台安全架构规约，ChannelCredentialDTO 永不包含任何密钥材料。明文密钥仅在首次创建或轮换时返回一次。"
+            />
+
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="ID">{data.id}</Descriptions.Item>
+              <Descriptions.Item label="渠道编码">
+                <Text strong copyable>
+                  {data.channelCode}
+                </Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="渠道名称">{data.channelName}</Descriptions.Item>
+              <Descriptions.Item label="密钥版本">
+                <Tag color="cyan">v{data.secretVersion}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Tag color={data.status ? 'success' : 'error'}>
+                  {data.status ? '启用中' : '已停用'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="上次轮换时间">
+                {data.lastRotatedAt || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间">{data.createTime || '-'}</Descriptions.Item>
+              <Descriptions.Item label="更新时间">{data.updateTime || '-'}</Descriptions.Item>
+            </Descriptions>
+          </div>
+        ) : (
+          !loading && <Text type="secondary">暂无数据</Text>
+        )}
+      </Spin>
+    </Drawer>
+  );
+};

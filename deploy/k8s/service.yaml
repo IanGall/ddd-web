@@ -1,0 +1,17 @@
+# 前端管理端纯静态托管服务 Service。
+# 仅作为集群内部 ClusterIP 负载均衡，对外由 Ingress 统一暴露（见 ingress.yaml）。
+apiVersion: v1
+kind: Service
+metadata:
+  name: ddd-web
+  labels:
+    app.kubernetes.io/name: ddd-web
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ddd-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP

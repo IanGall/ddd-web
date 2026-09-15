@@ -1,0 +1,4 @@
+# 工具版本跟随上游：node 的 lts 与 pnpm 的 latest 由 mise 动态解析
+[tools]
+node = "lts"
+pnpm = "latest"

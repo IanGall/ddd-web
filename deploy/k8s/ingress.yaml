@@ -1,0 +1,37 @@
+# 前端管理端的对外路由：在本机集群的 Ingress Controller（apisix）上只认领 / 前缀。
+#
+# 核心设计与契约约束（参考 admin-web-plan.md §2.4 与网关 Ingress 设计）：
+# 1. 为什么只认领 / 而不声明 /api：
+#    管理端前端（ddd-web 仓）与后端网关（ian-ddd-gateway）共用同一个 host（gateway.example.com）。
+#    后端网关已在其专有 Ingress（ian-ddd-gateway/dev-ops/k8s/ingress.yaml）中认领了 /api 前缀；
+#    前端 Ingress 仅认领根路径 /，由前端 nginx 托管静态资源与 SPA 路由 fallback。
+#    绝对不能在前端 Ingress 中声明 /api，否则两个 Ingress 在同一 host + 同一 path 上重复，
+#    命中哪个后端是不确定的。
+# 2. 同源无 CORS：
+#    前端页面与 /api 接口共用同一域名（gateway.example.com）与端口，在浏览器视角下天然同源，
+#    不需要配置与处理跨域资源共享（CORS），后端网关无需开放额外的 CORS 预检（OPTIONS）放行逻辑。
+# 3. 静态资源不挂网关：
+#    后端网关白名单仅放行 /api/admin|app|external/**，前端静态文件与 index.html 完全由本仓 nginx 承载。
+# 4. 不配 TLS：
+#    按既有部署约束保持 HTTP，TLS 由集群入口负载均衡（如外部 ALB/SLB）统一终结。
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ddd-web
+  labels:
+    app.kubernetes.io/name: ddd-web
+spec:
+  # 本机 OrbStack 集群与集群 Ingress Controller 为 apisix（必须是小写 DNS 标签）
+  ingressClassName: apisix
+  rules:
+    - host: gateway.example.com
+      http:
+        paths:
+          # 前端管理端单页应用及静态资源（网关专有 Ingress 负责认领 /api，此处仅认领 /）
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ddd-web
+                port:
+                  number: 80

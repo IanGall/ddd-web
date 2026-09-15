@@ -1,0 +1,126 @@
+# 前端管理端（SPA）k8s 部署清单。
+#
+# 前置：镜像已构建 —— 本模块无 build.sh，在 ddd-web 仓根目录下执行：
+#   docker build -t system/ddd-web:1.0-SNAPSHOT -f deploy/Dockerfile .
+#
+# 刻意不做的事（与网关清单注释风格一致）：
+# 1. 不配置 ConfigMap / Secret：前端属于纯静态单页应用（SPA），构建期已将配置内联至静态 bundle，
+#    运行时不连接数据库或中间件、不持有运行时凭据。
+# 2. 不配置 HPA / PDB：管理端当前无突发高并发伸缩需求；固定 2 副本足以承载管理后台请求，并支撑滚动更新，
+#    过度配置 HPA 反而会增加控制面调度与指标采集开销。
+# 3. 不配动态网关代理：静态资源完全由 nginx 本身承载，网关仅处理 /api/**，动静彻底隔离。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ddd-web
+  labels:
+    app.kubernetes.io/name: ddd-web
+spec:
+  # 2 副本支撑滚动更新（配合 maxUnavailable=0 做到零停机切流与基础容灾）
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      # 先起新副本、ready 后再摘旧副本，保证滚动更新期间始终有可用端点
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ddd-web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ddd-web
+    spec:
+      # preStop(5s) + 优雅停机余量，给 Ingress Controller 与 iptables 摘除端点预留传播时间
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          # 尽量把前端副本分散到不同物理/虚拟节点；单节点集群下尽力而为，不阻塞调度
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: ddd-web
+      containers:
+        - name: web
+          image: system/ddd-web:1.0-SNAPSHOT
+          # SNAPSHOT 是可移动 tag：生产请改为不可变 tag 或 digest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          resources:
+            # 纯静态资源托管负载极轻，给予合理基线与限制避免浪费集群资源
+            requests:
+              cpu: "50m"
+              memory: 64Mi
+            limits:
+              cpu: "500m"
+              memory: 256Mi
+          # 启动探针：给冷节点镜像拉取与启动预留裕度
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 3
+            timeoutSeconds: 2
+            failureThreshold: 10
+          # 就绪探针：探测 /，nginx 必须返回 HTTP 200（加载 index.html 正常）才挂入 Service Endpoints
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # 存活探针：周期性健康检查，失败触发容器重启
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              # 等 Ingress Controller 摘除 Endpoints 传播完成再发 SIGTERM，避免切流瞬间的 502/504
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            # 开启只读根文件系统提升容器安全性，防篡改静态文件
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              # 仅保留 nginx master 降权切换 worker 用户（CHOWN, SETUID, SETGID）以及绑定 80 端口所需权限
+              add:
+                - CHOWN
+                - SETUID
+                - SETGID
+                - NET_BIND_SERVICE
+          volumeMounts:
+            # 配合 readOnlyRootFilesystem: true，将临时写目录挂载到 emptyDir，防止 nginx 启动失败
+            - name: tmp
+              mountPath: /tmp
+            - name: var-run
+              mountPath: /var/run
+            - name: var-cache
+              mountPath: /var/cache/nginx
+      volumes:
+        # emptyDir 随 Pod 销毁，提供 nginx 运行时 pid 与缓存所需的临时写入介质
+        - name: tmp
+          emptyDir: {}
+        - name: var-run
+          emptyDir: {}
+        - name: var-cache
+          emptyDir: {}
