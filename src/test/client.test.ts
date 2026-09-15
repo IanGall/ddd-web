@@ -788,4 +788,426 @@ describe('A4 错误码语义分流与前端行为断言', () => {
       }
     },
   );
+
+  // 9. 下游不可用组：防误杀断言（RPC_TIMEOUT / RPC_ERROR / RPC_NO_PROVIDER / AUTH_UNAVAILABLE）
+  it.each([
+    {
+      code: ResponseCode.RPC_TIMEOUT,
+      status: 504,
+      expectedMsg: '下游服务调用超时，请稍后重试',
+    },
+    {
+      code: ResponseCode.RPC_ERROR,
+      status: 502,
+      expectedMsg: '下游服务不可用，请稍后重试',
+    },
+    {
+      code: ResponseCode.RPC_NO_PROVIDER,
+      status: 503,
+      expectedMsg: '下游服务不可用，请稍后重试',
+    },
+    {
+      code: ResponseCode.AUTH_UNAVAILABLE,
+      status: 503,
+      expectedMsg: '下游服务不可用，请稍后重试',
+    },
+  ])(
+    '$code($status) 抛出下游不可用异常，展示对应提示且登录态完整保留、零 refresh、零跳登录',
+    async ({ code, status, expectedMsg }) => {
+      useAuthStore.getState().setToken({
+        accessToken: 'active-token-downstream',
+        refreshToken: 'active-refresh-downstream',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        refreshExpiresIn: 7200,
+        sessionId: 'session-downstream',
+        userId: 99,
+        accountId: 999,
+        username: 'operator',
+        userType: 'ADMIN_SUB_ACCOUNT',
+      });
+
+      const refreshSpy = vi.spyOn(refreshClient, 'post');
+
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        const error = new axios.AxiosError(expectedMsg, 'ERR_BAD_RESPONSE', config, null, {
+          data: {
+            code,
+            info: expectedMsg,
+            data: null,
+          },
+          status,
+          statusText: 'Service Unavailable',
+          headers: new AxiosHeaders({ 'x-request-id': `req-downstream-${code}` }),
+          config,
+        });
+        return Promise.reject(error);
+      };
+
+      let caughtError: ApiError | null = null;
+      try {
+        await request.get('/api/admin/channels');
+      } catch (err) {
+        caughtError = err as ApiError;
+      }
+
+      expect(caughtError).toBeInstanceOf(ApiError);
+      expect(caughtError?.code).toBe(code);
+      expect(caughtError?.status).toBe(status);
+
+      // 行为断言 1：展示规范对应提示
+      expect(messageErrorSpy).toHaveBeenCalledTimes(1);
+      expect(messageErrorSpy).toHaveBeenCalledWith(expectedMsg);
+
+      // 行为断言 2：绝不触发 refresh
+      expect(refreshSpy).not.toHaveBeenCalled();
+
+      // 行为断言 3：绝不跳登录
+      expect(redirectedPath).toBeNull();
+
+      // 行为断言 4：登录态全量字段保持完好
+      const state = useAuthStore.getState();
+      expect(state.accessToken).toBe('active-token-downstream');
+      expect(state.refreshToken).toBe('active-refresh-downstream');
+      expect(state.sessionId).toBe('session-downstream');
+      expect(state.isAuthenticated()).toBe(true);
+    },
+  );
+
+  // 10. HTTP 200 业务错误包缺少 info 时的缺省提示文案回退
+  it.each([
+    {
+      code: ResponseCode.NOT_FOUND,
+      expectedMsg: '请求的资源不存在',
+    },
+    {
+      code: ResponseCode.CONFLICT,
+      expectedMsg: '资源状态冲突',
+    },
+    {
+      code: ResponseCode.PAYLOAD_TOO_LARGE,
+      expectedMsg: '请求数据体超限',
+    },
+    {
+      code: ResponseCode.RPC_ERROR,
+      expectedMsg: '下游服务不可用，请稍后重试',
+    },
+    {
+      code: ResponseCode.RPC_TIMEOUT,
+      expectedMsg: '下游服务调用超时，请稍后重试',
+    },
+  ])(
+    'HTTP 200 响应中携带业务错误码但缺少 info 字段时，回退展示内置规范文案「$expectedMsg」',
+    async ({ code, expectedMsg }) => {
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        return {
+          data: {
+            code,
+            // 故意不传 info
+            data: null,
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: new AxiosHeaders({ 'x-request-id': `req-no-info-${code}` }),
+          config,
+        };
+      };
+
+      let caughtError: ApiError | null = null;
+      try {
+        await request.post('/api/admin/resource-action', {});
+      } catch (err) {
+        caughtError = err as ApiError;
+      }
+
+      expect(caughtError).toBeInstanceOf(ApiError);
+      expect(caughtError?.code).toBe(code);
+      expect(messageErrorSpy).toHaveBeenCalledTimes(1);
+      expect(messageErrorSpy).toHaveBeenCalledWith(expectedMsg);
+      expect(redirectedPath).toBeNull();
+    },
+  );
+
+  // 11. NOT_FOUND(404) / CONFLICT(409) / PAYLOAD_TOO_LARGE(413)：登录态防误杀断言
+  it.each([
+    {
+      code: ResponseCode.NOT_FOUND,
+      status: 404,
+      info: '请求的用户不存在',
+    },
+    {
+      code: ResponseCode.CONFLICT,
+      status: 409,
+      info: '角色编码已存在，请勿重复创建',
+    },
+    {
+      code: ResponseCode.PAYLOAD_TOO_LARGE,
+      status: 413,
+      info: '上传渠道凭证数据超过 1 MiB 上限',
+    },
+  ])(
+    '$code($status) 业务错误正常展示提示，且绝不误杀登录态、零 refresh、零跳登录',
+    async ({ code, status, info }) => {
+      useAuthStore.getState().setToken({
+        accessToken: 'active-token-biz-err',
+        refreshToken: 'active-refresh-biz-err',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        refreshExpiresIn: 7200,
+        sessionId: 'session-biz-err',
+        userId: 88,
+        accountId: 888,
+        username: 'admin',
+        userType: 'ADMIN_PRIMARY',
+      });
+
+      const refreshSpy = vi.spyOn(refreshClient, 'post');
+
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        const error = new axios.AxiosError('Client Error', 'ERR_BAD_REQUEST', config, null, {
+          data: {
+            code,
+            info,
+            data: null,
+          },
+          status,
+          statusText: 'Client Error',
+          headers: new AxiosHeaders({ 'x-request-id': `req-biz-${code}` }),
+          config,
+        });
+        return Promise.reject(error);
+      };
+
+      let caughtError: ApiError | null = null;
+      try {
+        await request.post('/api/admin/roles', { name: 'test' });
+      } catch (err) {
+        caughtError = err as ApiError;
+      }
+
+      expect(caughtError).toBeInstanceOf(ApiError);
+      expect(caughtError?.code).toBe(code);
+      expect(caughtError?.status).toBe(status);
+
+      // 行为断言 1：弹出对应业务提示文案
+      expect(messageErrorSpy).toHaveBeenCalledTimes(1);
+      expect(messageErrorSpy).toHaveBeenCalledWith(info);
+
+      // 行为断言 2：严禁触发 refresh
+      expect(refreshSpy).not.toHaveBeenCalled();
+
+      // 行为断言 3：严禁跳转登录
+      expect(redirectedPath).toBeNull();
+
+      // 行为断言 4：登录态防误杀，全量保持有效
+      const state = useAuthStore.getState();
+      expect(state.accessToken).toBe('active-token-biz-err');
+      expect(state.refreshToken).toBe('active-refresh-biz-err');
+      expect(state.sessionId).toBe('session-biz-err');
+      expect(state.isAuthenticated()).toBe(true);
+    },
+  );
+
+  // 12. HTTP 状态码兜底：非 401 异常在无 code 时保持登录态并弹出对应全局提示
+  it.each([
+    {
+      status: 403,
+      expectedCode: ResponseCode.ACCESS_DENIED,
+      info: 'Forbidden without code',
+    },
+    {
+      status: 404,
+      expectedCode: ResponseCode.NOT_FOUND,
+      info: 'Not Found without code',
+    },
+    {
+      status: 409,
+      expectedCode: ResponseCode.CONFLICT,
+      info: 'Conflict without code',
+    },
+    {
+      status: 413,
+      expectedCode: ResponseCode.PAYLOAD_TOO_LARGE,
+      info: 'Payload Too Large without code',
+    },
+    {
+      status: 429,
+      expectedCode: ResponseCode.AUTH_RATE_LIMITED,
+      info: 'Too Many Requests without code',
+    },
+    {
+      status: 502,
+      expectedCode: ResponseCode.RPC_ERROR,
+      info: 'Bad Gateway without code',
+    },
+    {
+      status: 503,
+      expectedCode: ResponseCode.RPC_ERROR,
+      info: 'Service Unavailable without code',
+    },
+    {
+      status: 504,
+      expectedCode: ResponseCode.RPC_TIMEOUT,
+      info: 'Gateway Timeout without code',
+    },
+    {
+      status: 500,
+      expectedCode: ResponseCode.INTERNAL_ERROR,
+      info: 'Internal Server Error without code',
+    },
+  ])(
+    'HTTP 状态码兜底：status=$status 无 code 时映射为 $expectedCode，展示错误并保留登录态',
+    async ({ status, expectedCode, info }) => {
+      useAuthStore.getState().setToken({
+        accessToken: 'active-token-http-fallback',
+        refreshToken: 'active-refresh-http-fallback',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        refreshExpiresIn: 7200,
+        sessionId: 'session-http-fallback',
+        userId: 1,
+        accountId: 100,
+        username: 'admin',
+        userType: 'ADMIN_PRIMARY',
+      });
+
+      const refreshSpy = vi.spyOn(refreshClient, 'post');
+
+      apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+        const error = new axios.AxiosError(info, 'ERR_BAD_REQUEST', config, null, {
+          data: { error: 'upstream proxy error' },
+          status,
+          statusText: 'Error',
+          headers: new AxiosHeaders({ 'x-request-id': `fallback-notice-${status}` }),
+          config,
+        });
+        return Promise.reject(error);
+      };
+
+      let caughtError: ApiError | null = null;
+      try {
+        await request.get(`/api/admin/gateway-error/${status}`);
+      } catch (err) {
+        caughtError = err as ApiError;
+      }
+
+      expect(caughtError).toBeInstanceOf(ApiError);
+      expect(caughtError?.code).toBe(expectedCode);
+      expect(caughtError?.status).toBe(status);
+
+      // 行为断言 1：展示错误提示（500 包含系统内部错误与 requestId，其余展示 info）
+      expect(messageErrorSpy).toHaveBeenCalledTimes(1);
+      if (expectedCode === ResponseCode.INTERNAL_ERROR) {
+        expect(messageErrorSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`fallback-notice-${status}`),
+        );
+        expect(messageErrorSpy).toHaveBeenCalledWith(expect.stringContaining('系统内部错误'));
+      } else {
+        expect(messageErrorSpy).toHaveBeenCalledWith(info);
+      }
+
+      // 行为断言 2：绝不误触发 refresh
+      expect(refreshSpy).not.toHaveBeenCalled();
+
+      // 行为断言 3：绝不跳转登录页
+      expect(redirectedPath).toBeNull();
+
+      // 行为断言 4：登录态保持完好
+      expect(useAuthStore.getState().accessToken).toBe('active-token-http-fallback');
+      expect(useAuthStore.getState().isAuthenticated()).toBe(true);
+    },
+  );
+
+  // 13. HTTP 401 兜底容错：即使网关/代理层返回无 code 的裸 401，仍能正确触发单飞 refresh 并成功重放业务请求
+  it('HTTP 401 状态码兜底：即使网关/代理层返回无 code 的裸 401，仍能触发单飞 refresh 并成功重放请求', async () => {
+    useAuthStore.getState().setToken({
+      accessToken: 'stale-access-token',
+      refreshToken: 'valid-refresh-token',
+      tokenType: 'Bearer',
+      expiresIn: 3600,
+      refreshExpiresIn: 7200,
+      sessionId: 'session-fallback-401',
+      userId: 1,
+      accountId: 100,
+      username: 'test_admin',
+      userType: 'ADMIN_PRIMARY',
+    });
+
+    let refreshCallCount = 0;
+    vi.spyOn(refreshClient, 'post').mockImplementation(async () => {
+      refreshCallCount++;
+      return {
+        data: {
+          code: ResponseCode.SUCCESS,
+          info: '刷新成功',
+          data: {
+            accessToken: 'recovered-access-token',
+            refreshToken: 'recovered-refresh-token',
+            tokenType: 'Bearer',
+            expiresIn: 3600,
+            refreshExpiresIn: 7200,
+            sessionId: 'session-fallback-401',
+            userId: 1,
+            accountId: 100,
+            username: 'test_admin',
+            userType: 'ADMIN_PRIMARY',
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: new AxiosHeaders(),
+        config: {} as InternalAxiosRequestConfig,
+      } as AxiosResponse;
+    });
+
+    let businessAttemptCount = 0;
+    apiClient.defaults.adapter = async (config: InternalAxiosRequestConfig) => {
+      businessAttemptCount++;
+      const authHeader = config.headers.get('Authorization') as string;
+
+      // 第一次携带过期 token，网关/反向代理返回无 code 的裸 401 HTML/Text 错误
+      if (authHeader === 'Bearer stale-access-token') {
+        const error = new axios.AxiosError('Unauthorized', 'ERR_BAD_REQUEST', config, null, {
+          data: '<html>401 Authorization Required</html>',
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: new AxiosHeaders({ 'x-request-id': 'req-bare-401' }),
+          config,
+        });
+        return Promise.reject(error);
+      }
+
+      // 重放携带刷新后的 token
+      if (authHeader === 'Bearer recovered-access-token') {
+        return {
+          data: {
+            code: ResponseCode.SUCCESS,
+            info: '成功',
+            data: { recovered: true },
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: new AxiosHeaders({ 'x-request-id': 'req-bare-401-replayed' }),
+          config,
+        };
+      }
+
+      throw new Error(`Unexpected Authorization header: ${authHeader}`);
+    };
+
+    const res = await request.get<{ recovered: boolean }>('/api/admin/protected-resource', {
+      skipGlobalNotice: true,
+    });
+
+    // 验证成功重放并得到业务数据
+    expect(res).toEqual({ recovered: true });
+    // 验证触发了且仅触发了 1 次 refresh
+    expect(refreshCallCount).toBe(1);
+    // 验证业务请求经历了 初次 401 + 重试 200 两次执行
+    expect(businessAttemptCount).toBe(2);
+    // 验证未跳转登录
+    expect(redirectedPath).toBeNull();
+    // 验证登录态更新为新 token
+    expect(useAuthStore.getState().accessToken).toBe('recovered-access-token');
+  });
 });
