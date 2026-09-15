@@ -55,7 +55,7 @@ describe('ChannelCredentials Components', () => {
 
   describe('SecretModal (硬性交互约束验证)', () => {
     const mockSecretData = {
-      id: 99,
+      id: '99',
       channelCode: 'CH_PAY_01',
       channelSecret: 'sec_very_secret_key_888',
       secretVersion: 1,
@@ -123,8 +123,8 @@ describe('ChannelCredentials Components', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'sub-session',
-        userId: 2,
-        accountId: 1,
+        userId: '2',
+        accountId: '1',
         username: 'sub_admin',
         userType: 'ADMIN_SUB_ACCOUNT',
       });
@@ -149,8 +149,8 @@ describe('ChannelCredentials Components', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'primary-session',
-        userId: 1,
-        accountId: 1,
+        userId: '1',
+        accountId: '1',
         username: 'primary_admin',
         userType: 'ADMIN_PRIMARY',
       });
@@ -162,7 +162,7 @@ describe('ChannelCredentials Components', () => {
         pageSize: 20,
         list: [
           {
-            id: 1,
+            id: '1',
             channelCode: 'CH_ALIPAY',
             channelName: '支付宝业务渠道',
             secretVersion: 2,

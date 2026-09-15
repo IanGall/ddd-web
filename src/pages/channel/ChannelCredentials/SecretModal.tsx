@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Button, Checkbox, Descriptions, message, Modal, Space, Typography } from 'antd';
 import { CopyOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ChannelCredentialSecretDTO } from '@/api/channel';
@@ -22,12 +22,15 @@ export interface SecretModalProps {
 export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose }) => {
   const [confirmedSaved, setConfirmedSaved] = useState(false);
 
-  // 每次打开弹窗重置保存确认状态
-  useEffect(() => {
-    if (open) {
+  // 打开目标变化时，在渲染期重置保存确认状态（React 官方「prop 变化时调整 state」模式）
+  const openKey = open && data ? `${data.channelCode}:${data.secretVersion}` : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setConfirmedSaved(false);
     }
-  }, [open]);
+  }
 
   if (!data) {
     return null;
@@ -88,7 +91,7 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
       }
       open={open}
       closable={false}
-      maskClosable={false}
+      mask={{ closable: false }}
       keyboard={false}
       footer={[
         <Button key="copy-all" icon={<CopyOutlined />} onClick={handleCopyAll}>
@@ -109,7 +112,7 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
         type="warning"
         showIcon
         style={{ marginBottom: 20 }}
-        message="安全须知：密钥材料关闭后无法再次获取"
+        title="安全须知：密钥材料关闭后无法再次获取"
         description="渠道密钥（channelSecret）在生成后仅通过当前窗口返回一次，服务端永不返回明文，亦不会持久化保存在任何前端缓存中。关闭本弹窗后将无法再次查看，若丢失只能重新轮换密钥。请立即复制并妥善保存在安全的密钥管理系统中！"
       />
 

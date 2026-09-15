@@ -6,7 +6,7 @@ const { Text } = Typography;
 
 export interface DetailDrawerProps {
   open: boolean;
-  credentialId: number | null;
+  credentialId: string | null;
   onClose: () => void;
 }
 
@@ -14,43 +14,53 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({ open, credentialId, 
   const [data, setData] = useState<ChannelCredentialDTO | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open && credentialId) {
-      let active = true;
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open && credentialId ? String(credentialId) : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    setData(null);
+    if (openKey !== null) {
       setLoading(true);
-      channelApi
-        .getById(credentialId)
-        .then((res) => {
-          if (active) {
-            setData(res);
-          }
-        })
-        .catch((err) => {
-          console.error('获取渠道凭证详情失败', err);
-        })
-        .finally(() => {
-          if (active) {
-            setLoading(false);
-          }
-        });
-
-      return () => {
-        active = false;
-      };
-    } else {
-      setData(null);
     }
-  }, [open, credentialId]);
+  }
+
+  useEffect(() => {
+    if (!openKey || !credentialId) {
+      return;
+    }
+    let active = true;
+    channelApi
+      .getById(credentialId)
+      .then((res) => {
+        if (active) {
+          setData(res);
+        }
+      })
+      .catch((err) => {
+        console.error('获取渠道凭证详情失败', err);
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [openKey, credentialId]);
 
   return (
-    <Drawer title="渠道凭证详情" placement="right" width={560} open={open} onClose={onClose}>
+    <Drawer title="渠道凭证详情" placement="right" size={560} open={open} onClose={onClose}>
       <Spin spinning={loading}>
         {data ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <Alert
               type="info"
               showIcon
-              message="安全保护说明"
+              title="安全保护说明"
               description="根据平台安全架构规约，ChannelCredentialDTO 永不包含任何密钥材料。明文密钥仅在首次创建或轮换时返回一次。"
             />
 

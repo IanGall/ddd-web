@@ -18,6 +18,8 @@
 
 - Node.js：`mise.toml` 中为 `lts`（当前解析为 `24.21.0`）
 - pnpm：`mise.toml` 中为 `latest`（当前解析为 `12.4.1`）
+- TypeScript：TS 因 typescript-eslint 尚不支持而暂锁 6.0.3，待其支持 TS ≥7.1 后放开。
+- Vitest：版本写 `^5.0.0` 而非更高的补丁号。pnpm 12 默认启用 `minimumReleaseAge` 供应链隔离（新发布的包需满 24 小时才允许安装），写成 `^5.0.0` 时 pnpm 会自动选中「已过隔离期的最新版」；若把下界抬到刚发布的版本，会因为候选全被隔离而安装失败。**不要为了「用上最新补丁」去放宽这个下界或添加 `minimumReleaseAgeExclude`。**
 
 如果已安装 [mise](https://mise.jdx.dev/)，进入目录后会自动切换对应版本：
 

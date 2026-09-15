@@ -10,8 +10,8 @@ export interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   sessionId: string | null;
-  accountId: number | null;
-  userId: number | null;
+  accountId: string | null;
+  userId: string | null;
   username: string | null;
   userType: string | null;
   permissionCodes: string[];

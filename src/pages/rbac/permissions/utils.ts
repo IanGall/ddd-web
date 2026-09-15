@@ -5,10 +5,15 @@ export interface PermissionTreeNode extends RbacPermissionDTO {
 }
 
 /**
+ * 根节点的 parentId 哨兵值。标识以字符串出网，因此哨兵值也是字符串。
+ */
+export const ROOT_PARENT_ID = '0';
+
+/**
  * 将平铺列表按 parentId 组织为树形结构，未找到父级的节点提升为顶层展示
  */
 export function buildPermissionTree(items: RbacPermissionDTO[]): PermissionTreeNode[] {
-  const map = new Map<number, PermissionTreeNode>();
+  const map = new Map<string, PermissionTreeNode>();
   const roots: PermissionTreeNode[] = [];
 
   items.forEach((item) => {
@@ -17,7 +22,7 @@ export function buildPermissionTree(items: RbacPermissionDTO[]): PermissionTreeN
 
   items.forEach((item) => {
     const node = map.get(item.id)!;
-    if (item.parentId && item.parentId !== 0 && map.has(item.parentId)) {
+    if (item.parentId && item.parentId !== ROOT_PARENT_ID && map.has(item.parentId)) {
       const parent = map.get(item.parentId)!;
       parent.children!.push(node);
     } else {

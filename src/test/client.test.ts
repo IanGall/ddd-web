@@ -27,8 +27,8 @@ describe('HTTP Client & Refresh Single-Flight', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'session-1',
-      userId: 1,
-      accountId: 100,
+      userId: '1',
+      accountId: '100',
       username: 'test_admin',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -55,8 +55,8 @@ describe('HTTP Client & Refresh Single-Flight', () => {
             expiresIn: 3600,
             refreshExpiresIn: 7200,
             sessionId: 'session-1',
-            userId: 1,
-            accountId: 100,
+            userId: '1',
+            accountId: '100',
             username: 'test_admin',
             userType: 'ADMIN_SUB_ACCOUNT',
           },
@@ -159,8 +159,8 @@ describe('HTTP Client & Refresh Single-Flight', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'session-2',
-      userId: 2,
-      accountId: 200,
+      userId: '2',
+      accountId: '200',
       username: 'revoked_user',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -340,8 +340,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'session-403',
-      userId: 1,
-      accountId: 100,
+      userId: '1',
+      accountId: '100',
       username: 'sub_admin',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -508,8 +508,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'session-rpc',
-        userId: 1,
-        accountId: 100,
+        userId: '1',
+        accountId: '100',
         username: 'test_admin',
         userType: 'ADMIN_PRIMARY',
       });
@@ -657,7 +657,7 @@ describe('A4 错误码语义分流与前端行为断言', () => {
           code: ResponseCode.SUCCESS,
           info: '成功',
           data: {
-            roleId: 10,
+            roleId: '10',
             roleCode: 'ROLE_ADMIN',
             roleName: '系统管理员',
           },
@@ -675,7 +675,7 @@ describe('A4 错误码语义分流与前端行为断言', () => {
 
     // 断言行为 1：直接返回 data，不抛错
     expect(data).toEqual({
-      roleId: 10,
+      roleId: '10',
       roleCode: 'ROLE_ADMIN',
       roleName: '系统管理员',
     });
@@ -821,8 +821,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'session-downstream',
-        userId: 99,
-        accountId: 999,
+        userId: '99',
+        accountId: '999',
         username: 'operator',
         userType: 'ADMIN_SUB_ACCOUNT',
       });
@@ -955,8 +955,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'session-biz-err',
-        userId: 88,
-        accountId: 888,
+        userId: '88',
+        accountId: '888',
         username: 'admin',
         userType: 'ADMIN_PRIMARY',
       });
@@ -1065,8 +1065,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
         expiresIn: 3600,
         refreshExpiresIn: 7200,
         sessionId: 'session-http-fallback',
-        userId: 1,
-        accountId: 100,
+        userId: '1',
+        accountId: '100',
         username: 'admin',
         userType: 'ADMIN_PRIMARY',
       });
@@ -1127,8 +1127,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'session-fallback-401',
-      userId: 1,
-      accountId: 100,
+      userId: '1',
+      accountId: '100',
       username: 'test_admin',
       userType: 'ADMIN_PRIMARY',
     });
@@ -1147,8 +1147,8 @@ describe('A4 错误码语义分流与前端行为断言', () => {
             expiresIn: 3600,
             refreshExpiresIn: 7200,
             sessionId: 'session-fallback-401',
-            userId: 1,
-            accountId: 100,
+            userId: '1',
+            accountId: '100',
             username: 'test_admin',
             userType: 'ADMIN_PRIMARY',
           },

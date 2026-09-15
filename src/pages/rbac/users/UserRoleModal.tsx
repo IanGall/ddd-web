@@ -18,31 +18,40 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [roles, setRoles] = useState<RbacRoleDTO[]>([]);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [modalError, setModalError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open && user) {
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open && user ? String(user.id) : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setModalError(null);
       setLoading(true);
-
-      Promise.all([rbacApi.getRoles({ pageNum: 1, pageSize: 100 }), rbacApi.getUserRoles(user.id)])
-        .then(([rolesRes, userRolesRes]) => {
-          setRoles(rolesRes.list);
-          setSelectedRoleIds(userRolesRes.roleIds || []);
-        })
-        .catch((err) => {
-          if (err instanceof ApiError) {
-            setModalError(err.info || '加载角色数据失败');
-          } else {
-            setModalError('加载角色数据失败');
-          }
-        })
-        .finally(() => {
-          setLoading(false);
-        });
     }
-  }, [open, user]);
+  }
+
+  useEffect(() => {
+    if (!openKey || !user) return;
+
+    Promise.all([rbacApi.getRoles({ pageNum: 1, pageSize: 100 }), rbacApi.getUserRoles(user.id)])
+      .then(([rolesRes, userRolesRes]) => {
+        setRoles(rolesRes.list);
+        setSelectedRoleIds(userRolesRes.roleIds || []);
+      })
+      .catch((err) => {
+        if (err instanceof ApiError) {
+          setModalError(err.info || '加载角色数据失败');
+        } else {
+          setModalError('加载角色数据失败');
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [openKey, user]);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -92,7 +101,7 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
     >
       {modalError && (
         <Alert
-          message={modalError}
+          title={modalError}
           type="error"
           showIcon
           closable
@@ -103,7 +112,7 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Spin tip="正在加载角色列表与当前授权..." />
+          <Spin description="正在加载角色列表与当前授权..." />
         </div>
       ) : (
         <div>

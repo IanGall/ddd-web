@@ -74,7 +74,7 @@ export const RoleListPage: React.FC = () => {
     setFilterParams({});
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await rbacApi.deleteRole(id);
       message.success('角色已成功删除');

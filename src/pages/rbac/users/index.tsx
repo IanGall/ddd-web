@@ -71,7 +71,7 @@ export const UserListPage: React.FC = () => {
     setFilterParams({});
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await rbacApi.deleteUser(id);
       message.success('用户已成功删除');

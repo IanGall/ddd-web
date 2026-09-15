@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  AutoComplete,
   Button,
   Divider,
   Form,
@@ -24,52 +23,79 @@ export interface DataScopeModalProps {
   onClose: () => void;
 }
 
+/**
+ * 数据范围类型。服务端只接受这三个值（`ChannelCredentialCaseService.SCOPE_TYPES`），
+ * 其余一律返回 400「数据范围类型仅支持 ACCOUNT、TENANT、STORE」。
+ */
 const COMMON_SCOPE_TYPES = [
-  { value: 'api', label: 'api (接口路径)' },
-  { value: 'merchant', label: 'merchant (商户标识)' },
-  { value: 'dept', label: 'dept (部门组织)' },
-  { value: 'region', label: 'region (地域分区)' },
+  { value: 'ACCOUNT', label: 'ACCOUNT (账号)' },
+  { value: 'TENANT', label: 'TENANT (租户)' },
+  { value: 'STORE', label: 'STORE (门店)' },
 ];
+
+const DEFAULT_SCOPE_TYPE = 'ACCOUNT';
 
 export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential, onClose }) => {
   const { hasPermission } = usePermission();
   const canUpdate = hasPermission('rbac:channel-credential:update');
 
-  const [scopeType, setScopeType] = useState('api');
+  const [scopeType, setScopeType] = useState(DEFAULT_SCOPE_TYPE);
   const [scopeValues, setScopeValues] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadDataScopes = React.useCallback(
-    async (typeToLoad: string) => {
-      if (!credential || !typeToLoad.trim()) return;
-      setLoading(true);
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open && credential ? String(credential.id) : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
+      setScopeType(DEFAULT_SCOPE_TYPE);
+      setScopeValues([]);
       setErrorMessage(null);
-      try {
-        const list = await channelApi.getDataScopes(credential.id, typeToLoad.trim());
+      setLoading(true);
+    }
+  }
+
+  const loadDataScopes = async (typeToLoad: string) => {
+    if (!credential || !typeToLoad.trim()) return;
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const list = await channelApi.getDataScopes(credential.id, typeToLoad.trim());
+      const values = list.map((item) => item.scopeValue);
+      setScopeValues(values);
+    } catch (err) {
+      console.error('获取数据范围失败', err);
+      if (err instanceof ApiError && err.code === ResponseCode.INVALID_ARGUMENT) {
+        setErrorMessage(err.info || '参数错误');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!openKey || !credential) return;
+
+    channelApi
+      .getDataScopes(credential.id, DEFAULT_SCOPE_TYPE)
+      .then((list) => {
         const values = list.map((item) => item.scopeValue);
         setScopeValues(values);
-      } catch (err) {
+      })
+      .catch((err) => {
         console.error('获取数据范围失败', err);
         if (err instanceof ApiError && err.code === ResponseCode.INVALID_ARGUMENT) {
           setErrorMessage(err.info || '参数错误');
         }
-      } finally {
+      })
+      .finally(() => {
         setLoading(false);
-      }
-    },
-    [credential],
-  );
-
-  useEffect(() => {
-    if (open && credential) {
-      setScopeType('api');
-      setScopeValues([]);
-      setErrorMessage(null);
-      loadDataScopes('api');
-    }
-  }, [open, credential, loadDataScopes]);
+      });
+  }, [openKey, credential]);
 
   const handleSave = async () => {
     if (!credential) return;
@@ -138,7 +164,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
         <Alert
           type="info"
           showIcon
-          message="数据范围说明"
+          title="数据范围说明"
           description="按 scopeType 全量替换指定类型下的授权范围值；每项须为非空字符串，上限 1000 项。输入值后按回车即可添加标签。"
         />
 
@@ -146,7 +172,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
           <Alert
             type="error"
             showIcon
-            message={errorMessage}
+            title={errorMessage}
             onClose={() => setErrorMessage(null)}
           />
         )}
@@ -154,14 +180,13 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
         <Form layout="vertical">
           <Form.Item
             label="数据范围类型 (scopeType)"
-            extra="可直接选择常用预设或手动输入自定义范围类型"
+            extra="仅支持服务端认可的 ACCOUNT、TENANT、STORE 三种类型"
           >
             <Space.Compact style={{ width: '100%' }}>
-              <AutoComplete
+              <Select
                 style={{ width: '100%' }}
                 value={scopeType}
                 options={COMMON_SCOPE_TYPES}
-                placeholder="例如：api、merchant、dept"
                 onChange={(val) => setScopeType(val)}
               />
               <Button type="default" loading={loading} onClick={() => loadDataScopes(scopeType)}>

@@ -4,6 +4,7 @@ import type { DataNode } from 'antd/es/tree';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacPermissionDTO, type RbacRoleDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
+import { ROOT_PARENT_ID } from '@/pages/rbac/permissions/utils';
 
 const { Text } = Typography;
 
@@ -32,7 +33,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
 
   // 构建树形数据
   const treeData = useMemo(() => {
-    const map = new Map<number, DataNode & { parentId: number }>();
+    const map = new Map<string, DataNode & { parentId: string }>();
     const roots: DataNode[] = [];
 
     const formatTitle = (item: RbacPermissionDTO) => {
@@ -72,7 +73,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
 
     permissions.forEach((perm) => {
       const node = map.get(perm.id)!;
-      if (perm.parentId && perm.parentId !== 0 && map.has(perm.parentId)) {
+      if (perm.parentId && perm.parentId !== ROOT_PARENT_ID && map.has(perm.parentId)) {
         const parent = map.get(perm.parentId)!;
         parent.children!.push(node);
       } else {
@@ -98,33 +99,42 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
   // 所有权限 ID 列表（用于全选）
   const allPermissionIds = useMemo(() => permissions.map((p) => p.id), [permissions]);
 
-  useEffect(() => {
-    if (open && role) {
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open && role ? String(role.id) : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setModalError(null);
       setLoading(true);
-
-      Promise.all([
-        rbacApi.getPermissions({ pageNum: 1, pageSize: 100 }),
-        rbacApi.getRolePermissions(role.id),
-      ])
-        .then(([permRes, rolePermRes]) => {
-          setPermissions(permRes.list);
-          const initialChecked = rolePermRes.permissionIds || [];
-          setCheckedKeys(initialChecked);
-          setExpandedKeys(permRes.list.map((p) => p.id));
-        })
-        .catch((err) => {
-          if (err instanceof ApiError) {
-            setModalError(err.info || '加载权限数据失败');
-          } else {
-            setModalError('加载权限数据失败');
-          }
-        })
-        .finally(() => {
-          setLoading(false);
-        });
     }
-  }, [open, role]);
+  }
+
+  useEffect(() => {
+    if (!openKey || !role) return;
+
+    Promise.all([
+      rbacApi.getPermissions({ pageNum: 1, pageSize: 100 }),
+      rbacApi.getRolePermissions(role.id),
+    ])
+      .then(([permRes, rolePermRes]) => {
+        setPermissions(permRes.list);
+        const initialChecked = rolePermRes.permissionIds || [];
+        setCheckedKeys(initialChecked);
+        setExpandedKeys(permRes.list.map((p) => p.id));
+      })
+      .catch((err) => {
+        if (err instanceof ApiError) {
+          setModalError(err.info || '加载权限数据失败');
+        } else {
+          setModalError('加载权限数据失败');
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [openKey, role]);
 
   const onExpand = (newExpandedKeys: React.Key[]) => {
     setExpandedKeys(newExpandedKeys);
@@ -164,12 +174,15 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
   const handleSubmit = async () => {
     if (!role) return;
 
-    // 合并全选节点与半选父节点（保证具有层级可见性），去重
-    const finalKeySet = new Set<number>();
-    checkedKeys.forEach((k) => finalKeySet.add(Number(k)));
-    halfCheckedKeys.forEach((k) => finalKeySet.add(Number(k)));
+    // 合并全选节点与半选父节点（保证具有层级可见性），去重。
+    // 标识全程保持字符串：转成 Number 会让超 2^53 的雪花 ID 丢精度。
+    const finalKeySet = new Set<string>();
+    checkedKeys.forEach((k) => finalKeySet.add(String(k)));
+    halfCheckedKeys.forEach((k) => finalKeySet.add(String(k)));
 
-    const permissionIds = Array.from(finalKeySet).filter((id) => id > 0);
+    const permissionIds = Array.from(finalKeySet).filter(
+      (id) => id !== '' && id !== ROOT_PARENT_ID,
+    );
 
     if (permissionIds.length > 500) {
       setModalError('分配权限项数量不得超过 500 个');
@@ -216,7 +229,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
     >
       {modalError && (
         <Alert
-          message={modalError}
+          title={modalError}
           type="error"
           showIcon
           closable
@@ -227,7 +240,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Spin tip="正在加载权限树与当前授权..." />
+          <Spin description="正在加载权限树与当前授权..." />
         </div>
       ) : (
         <div>

@@ -85,8 +85,8 @@ describe('DashboardPage 统计卡片与安全契约', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'sess-admin',
-      userId: 1,
-      accountId: 100,
+      userId: '1',
+      accountId: '100',
       username: 'admin_root',
       userType: 'ADMIN_PRIMARY',
     });
@@ -119,8 +119,8 @@ describe('DashboardPage 统计卡片与安全契约', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'sess-sub',
-      userId: 2,
-      accountId: 100,
+      userId: '2',
+      accountId: '100',
       username: 'sub_user',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -162,8 +162,8 @@ describe('DashboardPage 统计卡片与安全契约', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'sess-sub',
-      userId: 2,
-      accountId: 100,
+      userId: '2',
+      accountId: '100',
       username: 'sub_user',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -203,8 +203,8 @@ describe('DashboardPage 统计卡片与安全契约', () => {
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'sess-1',
-      userId: 1,
-      accountId: 1,
+      userId: '1',
+      accountId: '1',
       username: 'root',
       userType: 'ADMIN_PRIMARY',
     });

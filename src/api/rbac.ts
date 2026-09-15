@@ -6,8 +6,8 @@ import type { PageResponse } from './types';
  * 对应 docs/plans/admin-web-plan.md §5.4
  */
 export interface RbacUserDTO {
-  id: number;
-  accountId: number;
+  id: string;
+  accountId: string;
   username: string;
   displayName: string | null;
   email: string | null;
@@ -55,7 +55,7 @@ export interface QueryUserParams {
  * 对应 docs/plans/admin-web-plan.md §5.5
  */
 export interface RbacRoleDTO {
-  id: number;
+  id: string;
   roleCode: string;
   roleName: string;
   roleDesc: string | null;
@@ -100,11 +100,11 @@ export interface QueryRoleParams {
  * 对应 docs/plans/admin-web-plan.md §5.6
  */
 export interface RbacPermissionDTO {
-  id: number;
+  id: string;
   permCode: string;
   permName: string;
   permType: number; // 1=目录 / 2=菜单 / 3=按钮
-  parentId: number; // 根节点为 0
+  parentId: string; // 根节点为 '0'
   path: string | null;
   method: string | null;
   status: boolean;
@@ -120,7 +120,7 @@ export interface CreatePermissionRequest {
   permCode: string; // 必填，<=64；自定义权限不得使用 rbac: 前缀
   permName: string; // 必填，<=128
   permType: number; // 枚举 1=目录 / 2=菜单 / 3=按钮，缺省 2
-  parentId?: number; // 根节点传 0（不是 null）；负数非法
+  parentId?: string; // 根节点传 '0'（不是 null）；负数非法
   path?: string; // 选填，<=255
   method?: string; // 选填，<=16（GET/POST/PUT/DELETE）
   status?: boolean;
@@ -132,7 +132,7 @@ export interface CreatePermissionRequest {
 export interface UpdatePermissionRequest {
   permName: string; // 必填，<=128
   permType: number; // 必填，1=目录 / 2=菜单 / 3=按钮
-  parentId?: number; // 根节点 0
+  parentId?: string; // 根节点 '0'
   path?: string; // 选填，<=255
   method?: string; // 选填，<=16
   status?: boolean;
@@ -147,7 +147,7 @@ export interface QueryPermissionParams {
   permCode?: string; // <=64
   permName?: string; // <=128
   permType?: number; // 1/2/3
-  parentId?: number;
+  parentId?: string;
   status?: boolean;
 }
 
@@ -156,8 +156,8 @@ export interface QueryPermissionParams {
  * 对应 docs/plans/admin-web-plan.md §5.7 #23
  */
 export interface QueryUserRoleIdsResp {
-  userId: number;
-  roleIds: number[];
+  userId: string;
+  roleIds: string[];
 }
 
 /**
@@ -165,8 +165,8 @@ export interface QueryUserRoleIdsResp {
  * 对应 docs/plans/admin-web-plan.md §5.7 #25
  */
 export interface QueryRolePermissionIdsResp {
-  roleId: number;
-  permissionIds: number[];
+  roleId: string;
+  permissionIds: string[];
 }
 
 /**
@@ -205,7 +205,7 @@ export const rbacApi = {
    * 根据 ID 查询用户详情
    * GET /api/admin/rbac/users/{id}
    */
-  getUserById: (id: number): Promise<RbacUserDTO> => {
+  getUserById: (id: string): Promise<RbacUserDTO> => {
     return request.get<RbacUserDTO>(`/api/admin/rbac/users/${id}`);
   },
 
@@ -221,7 +221,7 @@ export const rbacApi = {
    * 更新用户
    * PUT /api/admin/rbac/users/{id}
    */
-  updateUser: (id: number, data: UpdateUserRequest): Promise<RbacUserDTO> => {
+  updateUser: (id: string, data: UpdateUserRequest): Promise<RbacUserDTO> => {
     return request.put<RbacUserDTO>(`/api/admin/rbac/users/${id}`, data);
   },
 
@@ -229,7 +229,7 @@ export const rbacApi = {
    * 删除用户
    * DELETE /api/admin/rbac/users/{id}
    */
-  deleteUser: (id: number): Promise<boolean> => {
+  deleteUser: (id: string): Promise<boolean> => {
     return request.delete<boolean>(`/api/admin/rbac/users/${id}`);
   },
 
@@ -248,7 +248,7 @@ export const rbacApi = {
    * 根据 ID 查询角色详情
    * GET /api/admin/rbac/roles/{id}
    */
-  getRoleById: (id: number): Promise<RbacRoleDTO> => {
+  getRoleById: (id: string): Promise<RbacRoleDTO> => {
     return request.get<RbacRoleDTO>(`/api/admin/rbac/roles/${id}`);
   },
 
@@ -264,7 +264,7 @@ export const rbacApi = {
    * 更新角色
    * PUT /api/admin/rbac/roles/{id}
    */
-  updateRole: (id: number, data: UpdateRoleRequest): Promise<RbacRoleDTO> => {
+  updateRole: (id: string, data: UpdateRoleRequest): Promise<RbacRoleDTO> => {
     return request.put<RbacRoleDTO>(`/api/admin/rbac/roles/${id}`, data);
   },
 
@@ -272,7 +272,7 @@ export const rbacApi = {
    * 删除角色
    * DELETE /api/admin/rbac/roles/{id}
    */
-  deleteRole: (id: number): Promise<boolean> => {
+  deleteRole: (id: string): Promise<boolean> => {
     return request.delete<boolean>(`/api/admin/rbac/roles/${id}`);
   },
 
@@ -291,7 +291,7 @@ export const rbacApi = {
    * 根据 ID 查询权限项详情
    * GET /api/admin/rbac/permissions/{id}
    */
-  getPermissionById: (id: number): Promise<RbacPermissionDTO> => {
+  getPermissionById: (id: string): Promise<RbacPermissionDTO> => {
     return request.get<RbacPermissionDTO>(`/api/admin/rbac/permissions/${id}`);
   },
 
@@ -307,7 +307,7 @@ export const rbacApi = {
    * 更新权限项（不含 permCode）
    * PUT /api/admin/rbac/permissions/{id}
    */
-  updatePermission: (id: number, data: UpdatePermissionRequest): Promise<RbacPermissionDTO> => {
+  updatePermission: (id: string, data: UpdatePermissionRequest): Promise<RbacPermissionDTO> => {
     return request.put<RbacPermissionDTO>(`/api/admin/rbac/permissions/${id}`, data);
   },
 
@@ -315,7 +315,7 @@ export const rbacApi = {
    * 删除权限项（systemManaged=true 的权限服务端将拒绝）
    * DELETE /api/admin/rbac/permissions/{id}
    */
-  deletePermission: (id: number): Promise<boolean> => {
+  deletePermission: (id: string): Promise<boolean> => {
     return request.delete<boolean>(`/api/admin/rbac/permissions/${id}`);
   },
 
@@ -324,7 +324,7 @@ export const rbacApi = {
    * 查询用户已授予的角色 ID 列表
    * GET /api/admin/rbac/users/{userId}/roles
    */
-  getUserRoles: (userId: number): Promise<QueryUserRoleIdsResp> => {
+  getUserRoles: (userId: string): Promise<QueryUserRoleIdsResp> => {
     return request.get<QueryUserRoleIdsResp>(`/api/admin/rbac/users/${userId}/roles`);
   },
 
@@ -332,7 +332,7 @@ export const rbacApi = {
    * 全量替换用户角色关系（空数组表示清空）
    * PUT /api/admin/rbac/users/{userId}/roles
    */
-  grantUserRoles: (userId: number, roleIds: number[]): Promise<boolean> => {
+  grantUserRoles: (userId: string, roleIds: string[]): Promise<boolean> => {
     return request.put<boolean>(`/api/admin/rbac/users/${userId}/roles`, { roleIds });
   },
 
@@ -340,7 +340,7 @@ export const rbacApi = {
    * 查询角色已授予的权限 ID 列表
    * GET /api/admin/rbac/roles/{roleId}/permissions
    */
-  getRolePermissions: (roleId: number): Promise<QueryRolePermissionIdsResp> => {
+  getRolePermissions: (roleId: string): Promise<QueryRolePermissionIdsResp> => {
     return request.get<QueryRolePermissionIdsResp>(`/api/admin/rbac/roles/${roleId}/permissions`);
   },
 
@@ -348,7 +348,7 @@ export const rbacApi = {
    * 全量替换角色权限关系（空数组表示清空）
    * PUT /api/admin/rbac/roles/{roleId}/permissions
    */
-  grantRolePermissions: (roleId: number, permissionIds: number[]): Promise<boolean> => {
+  grantRolePermissions: (roleId: string, permissionIds: string[]): Promise<boolean> => {
     return request.put<boolean>(`/api/admin/rbac/roles/${roleId}/permissions`, {
       permissionIds,
     });

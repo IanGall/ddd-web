@@ -86,8 +86,8 @@ describe('UserListPage', () => {
       pageSize: 20,
       list: [
         {
-          id: 1,
-          accountId: 10,
+          id: '1',
+          accountId: '10',
           username: 'user_test',
           displayName: '测试用户',
           status: true,
@@ -153,7 +153,7 @@ describe('RoleListPage', () => {
       pageSize: 20,
       list: [
         {
-          id: 1,
+          id: '1',
           roleCode: 'admin_role',
           roleName: '运维管理员',
           roleDesc: '运维管理角色',
@@ -194,11 +194,11 @@ describe('PermissionListPage', () => {
       pageSize: 50,
       list: [
         {
-          id: 1,
+          id: '1',
           permCode: 'rbac:user:read',
           permName: '查看用户',
           permType: 2,
-          parentId: 0,
+          parentId: '0',
           status: true,
           systemManaged: true, // 系统内置
           createTime: '2026-09-15T10:00:00',

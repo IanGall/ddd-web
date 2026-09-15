@@ -151,7 +151,7 @@ export const DashboardPage: React.FC = () => {
         <Paragraph type="secondary">
           欢迎使用 DDD 平台管理控制台，当前登录会话令牌严格存储于内存中，保障操作安全与鉴权隔离。
         </Paragraph>
-        <Space direction="horizontal" wrap>
+        <Space orientation="horizontal" wrap>
           <Tag color={userType === 'ADMIN_PRIMARY' ? 'gold' : 'blue'}>
             {userType === 'ADMIN_PRIMARY'
               ? '主管理员 (ADMIN_PRIMARY)'
@@ -173,7 +173,7 @@ export const DashboardPage: React.FC = () => {
                   title="用户总数"
                   value={usersStat.value}
                   prefix={<UserOutlined style={{ marginRight: 4 }} />}
-                  valueStyle={usersStat.isDimmed ? { color: '#8c8c8c' } : undefined}
+                  styles={{ content: usersStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   {canReadUsers ? '系统用户实体规模' : '无读取权限'}
@@ -191,7 +191,7 @@ export const DashboardPage: React.FC = () => {
                   title="角色总数"
                   value={rolesStat.value}
                   prefix={<TeamOutlined style={{ marginRight: 4 }} />}
-                  valueStyle={rolesStat.isDimmed ? { color: '#8c8c8c' } : undefined}
+                  styles={{ content: rolesStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   {canReadRoles ? '安全权限角色定义' : '无读取权限'}
@@ -209,7 +209,7 @@ export const DashboardPage: React.FC = () => {
                   title="权限项总数"
                   value={permissionsStat.value}
                   prefix={<KeyOutlined style={{ marginRight: 4 }} />}
-                  valueStyle={permissionsStat.isDimmed ? { color: '#8c8c8c' } : undefined}
+                  styles={{ content: permissionsStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   {canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
@@ -227,7 +227,7 @@ export const DashboardPage: React.FC = () => {
                   title="渠道凭证总数"
                   value={channelsStat.value}
                   prefix={<ApiOutlined style={{ marginRight: 4 }} />}
-                  valueStyle={channelsStat.isDimmed ? { color: '#8c8c8c' } : undefined}
+                  styles={{ content: channelsStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
                 />
                 <Text type="secondary" style={{ fontSize: 12 }}>
                   {canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
@@ -287,7 +287,7 @@ export const DashboardPage: React.FC = () => {
 
         <Col xs={24} sm={12} md={8}>
           <Card title="快捷导航" size="small">
-            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
               <Button
                 type="link"
                 icon={<DashboardOutlined />}

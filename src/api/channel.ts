@@ -7,7 +7,7 @@ import type { PageResponse } from './types';
  * 对应 docs/plans/admin-web-plan.md §5.8
  */
 export interface ChannelCredentialDTO {
-  id: number;
+  id: string;
   channelCode: string;
   channelName: string;
   secretVersion: number;
@@ -21,7 +21,7 @@ export interface ChannelCredentialDTO {
  * 渠道凭证密钥 DTO（仅创建或轮换时返回一次，之后永不返回）
  */
 export interface ChannelCredentialSecretDTO {
-  id: number;
+  id: string;
   channelCode: string;
   channelSecret: string;
   secretVersion: number;
@@ -116,7 +116,7 @@ export const channelApi = {
    * GET /api/admin/platform/channel-credentials/{id}
    * 权限码: rbac:channel-credential:read
    */
-  getById: (id: number, config?: AxiosRequestConfig): Promise<ChannelCredentialDTO> => {
+  getById: (id: string, config?: AxiosRequestConfig): Promise<ChannelCredentialDTO> => {
     return request.get<ChannelCredentialDTO>(
       `/api/admin/platform/channel-credentials/${id}`,
       config,
@@ -145,7 +145,7 @@ export const channelApi = {
    * 权限码: rbac:channel-credential:update
    */
   update: (
-    id: number,
+    id: string,
     data: UpdateChannelCredentialRequest,
     config?: AxiosRequestConfig,
   ): Promise<ChannelCredentialDTO> => {
@@ -162,7 +162,7 @@ export const channelApi = {
    * 权限码: rbac:channel-credential:update
    */
   updateStatus: (
-    id: number,
+    id: string,
     data: UpdateChannelStatusRequest,
     config?: AxiosRequestConfig,
   ): Promise<ChannelCredentialDTO> => {
@@ -178,7 +178,7 @@ export const channelApi = {
    * POST /api/admin/platform/channel-credentials/{id}/secret/rotate
    * 权限码: rbac:channel-credential:rotate
    */
-  rotateSecret: (id: number, config?: AxiosRequestConfig): Promise<ChannelCredentialSecretDTO> => {
+  rotateSecret: (id: string, config?: AxiosRequestConfig): Promise<ChannelCredentialSecretDTO> => {
     return request.post<ChannelCredentialSecretDTO>(
       `/api/admin/platform/channel-credentials/${id}/secret/rotate`,
       undefined,
@@ -191,7 +191,7 @@ export const channelApi = {
    * DELETE /api/admin/platform/channel-credentials/{id}
    * 权限码: rbac:channel-credential:delete
    */
-  delete: (id: number, config?: AxiosRequestConfig): Promise<boolean> => {
+  delete: (id: string, config?: AxiosRequestConfig): Promise<boolean> => {
     return request.delete<boolean>(`/api/admin/platform/channel-credentials/${id}`, config);
   },
 
@@ -201,7 +201,7 @@ export const channelApi = {
    * 权限码: rbac:channel-credential:read
    */
   getDataScopes: (
-    id: number,
+    id: string,
     scopeType: string,
     config?: AxiosRequestConfig,
   ): Promise<ChannelDataScopeDTO[]> => {
@@ -217,7 +217,7 @@ export const channelApi = {
    * 权限码: rbac:channel-credential:update
    */
   replaceDataScopes: (
-    id: number,
+    id: string,
     scopeType: string,
     data: ReplaceChannelDataScopesRequest,
     config?: AxiosRequestConfig,

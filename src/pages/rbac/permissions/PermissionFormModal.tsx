@@ -24,29 +24,38 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
 
   const isEdit = Boolean(permission);
 
-  useEffect(() => {
-    if (open) {
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open ? (permission ? String(permission.id) : 'new') : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setFormError(null);
-      if (permission) {
-        form.setFieldsValue({
-          permCode: permission.permCode,
-          permName: permission.permName,
-          permType: permission.permType,
-          parentId: permission.parentId ?? 0,
-          path: permission.path || '',
-          method: permission.method || undefined,
-          status: permission.status,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          permType: 2, // 缺省为 2=菜单
-          parentId: 0, // 契约要求：根节点必须传 0，不是 null
-          status: true,
-        });
-      }
     }
-  }, [open, permission, form]);
+  }
+
+  useEffect(() => {
+    if (!openKey) return;
+    if (permission) {
+      form.setFieldsValue({
+        permCode: permission.permCode,
+        permName: permission.permName,
+        permType: permission.permType,
+        parentId: permission.parentId ?? 0,
+        path: permission.path || '',
+        method: permission.method || undefined,
+        status: permission.status,
+      });
+    } else {
+      form.resetFields();
+      form.setFieldsValue({
+        permType: 2, // 缺省为 2=菜单
+        parentId: 0, // 契约要求：根节点必须传 0，不是 null
+        status: true,
+      });
+    }
+  }, [openKey, permission, form]);
 
   const handleSubmit = async () => {
     try {
@@ -121,7 +130,7 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
     >
       {formError && (
         <Alert
-          message={formError}
+          title={formError}
           type="error"
           showIcon
           closable

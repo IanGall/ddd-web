@@ -23,7 +23,7 @@ describe('channelApi Client', () => {
       pageSize: 20,
       list: [
         {
-          id: 1,
+          id: '1',
           channelCode: 'CH_001',
           channelName: '微信支付',
           secretVersion: 1,
@@ -69,7 +69,7 @@ describe('channelApi Client', () => {
 
   it('2. getById 应发起 GET /api/admin/platform/channel-credentials/{id}', async () => {
     const mockDetail = {
-      id: 10,
+      id: '10',
       channelCode: 'CH_TEST',
       channelName: '测试渠道',
       secretVersion: 2,
@@ -81,7 +81,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.get).mockResolvedValueOnce(mockDetail);
 
-    const res = await channelApi.getById(10);
+    const res = await channelApi.getById('10');
     expect(request.get).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/10',
       undefined,
@@ -91,7 +91,7 @@ describe('channelApi Client', () => {
 
   it('3. create 应发起 POST /api/admin/platform/channel-credentials 并返回密钥凭据', async () => {
     const mockSecret = {
-      id: 11,
+      id: '11',
       channelCode: 'CH_NEW',
       channelSecret: 'sec_1234567890abcdef',
       secretVersion: 1,
@@ -110,7 +110,7 @@ describe('channelApi Client', () => {
 
   it('4. update 应发起 PUT /api/admin/platform/channel-credentials/{id}', async () => {
     const mockUpdated = {
-      id: 12,
+      id: '12',
       channelCode: 'CH_12',
       channelName: '已更名渠道',
       secretVersion: 1,
@@ -122,7 +122,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.put).mockResolvedValueOnce(mockUpdated);
 
-    const res = await channelApi.update(12, { channelName: '已更名渠道' });
+    const res = await channelApi.update('12', { channelName: '已更名渠道' });
     expect(request.put).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/12',
       { channelName: '已更名渠道' },
@@ -133,7 +133,7 @@ describe('channelApi Client', () => {
 
   it('5. updateStatus 应发起 PUT /api/admin/platform/channel-credentials/{id}/status', async () => {
     const mockUpdated = {
-      id: 13,
+      id: '13',
       channelCode: 'CH_13',
       channelName: '渠道13',
       secretVersion: 1,
@@ -145,7 +145,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.put).mockResolvedValueOnce(mockUpdated);
 
-    const res = await channelApi.updateStatus(13, { status: false });
+    const res = await channelApi.updateStatus('13', { status: false });
     expect(request.put).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/13/status',
       { status: false },
@@ -156,7 +156,7 @@ describe('channelApi Client', () => {
 
   it('6. rotateSecret 应发起 POST /api/admin/platform/channel-credentials/{id}/secret/rotate', async () => {
     const mockNewSecret = {
-      id: 14,
+      id: '14',
       channelCode: 'CH_14',
       channelSecret: 'sec_rotated_999999',
       secretVersion: 3,
@@ -164,7 +164,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.post).mockResolvedValueOnce(mockNewSecret);
 
-    const res = await channelApi.rotateSecret(14);
+    const res = await channelApi.rotateSecret('14');
     expect(request.post).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/14/secret/rotate',
       undefined,
@@ -176,7 +176,7 @@ describe('channelApi Client', () => {
   it('7. delete 应发起 DELETE /api/admin/platform/channel-credentials/{id}', async () => {
     vi.mocked(request.delete).mockResolvedValueOnce(true);
 
-    const res = await channelApi.delete(15);
+    const res = await channelApi.delete('15');
     expect(request.delete).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/15',
       undefined,
@@ -192,7 +192,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.get).mockResolvedValueOnce(mockScopes);
 
-    const res = await channelApi.getDataScopes(16, 'api');
+    const res = await channelApi.getDataScopes('16', 'api');
     expect(request.get).toHaveBeenCalledWith(
       '/api/admin/platform/channel-credentials/16/data-scopes/api',
       undefined,
@@ -208,7 +208,7 @@ describe('channelApi Client', () => {
 
     vi.mocked(request.put).mockResolvedValueOnce(newScopes);
 
-    const res = await channelApi.replaceDataScopes(17, 'merchant', {
+    const res = await channelApi.replaceDataScopes('17', 'merchant', {
       scopeValues: ['MCH_A', 'MCH_B'],
     });
 

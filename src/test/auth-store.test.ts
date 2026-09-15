@@ -14,8 +14,8 @@ describe('useAuthStore', () => {
     expiresIn: 7200,
     refreshExpiresIn: 604800,
     sessionId: 'sess-001',
-    userId: 1001,
-    accountId: 2001,
+    userId: '1001',
+    accountId: '2001',
     username: 'admin',
     userType: 'ADMIN_SUB_ACCOUNT',
   };
@@ -36,8 +36,8 @@ describe('useAuthStore', () => {
     expect(state.accessToken).toBe('mock-access-token-123');
     expect(state.refreshToken).toBe('mock-refresh-token-456');
     expect(state.sessionId).toBe('sess-001');
-    expect(state.accountId).toBe(2001);
-    expect(state.userId).toBe(1001);
+    expect(state.accountId).toBe('2001');
+    expect(state.userId).toBe('1001');
     expect(state.username).toBe('admin');
     expect(state.userType).toBe('ADMIN_SUB_ACCOUNT');
     expect(state.isAuthenticated()).toBe(true);

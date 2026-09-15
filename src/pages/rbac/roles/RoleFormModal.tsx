@@ -19,24 +19,33 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
 
   const isEdit = Boolean(role);
 
-  useEffect(() => {
-    if (open) {
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open ? (role ? String(role.id) : 'new') : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setFormError(null);
-      if (role) {
-        form.setFieldsValue({
-          roleCode: role.roleCode,
-          roleName: role.roleName,
-          roleDesc: role.roleDesc || '',
-          status: role.status,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          status: true,
-        });
-      }
     }
-  }, [open, role, form]);
+  }
+
+  useEffect(() => {
+    if (!openKey) return;
+    if (role) {
+      form.setFieldsValue({
+        roleCode: role.roleCode,
+        roleName: role.roleName,
+        roleDesc: role.roleDesc || '',
+        status: role.status,
+      });
+    } else {
+      form.resetFields();
+      form.setFieldsValue({
+        status: true,
+      });
+    }
+  }, [openKey, role, form]);
 
   const handleSubmit = async () => {
     try {
@@ -86,7 +95,7 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
     >
       {formError && (
         <Alert
-          message={formError}
+          title={formError}
           type="error"
           showIcon
           closable

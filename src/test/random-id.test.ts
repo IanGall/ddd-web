@@ -31,7 +31,7 @@ describe('randomId 唯一 ID 生成单点与能力降级测试', () => {
   it('2. 非安全上下文路径（核心场景）：crypto.randomUUID 为 undefined 时，降级到 crypto.getRandomValues 且不抛错', () => {
     // 模拟真实非安全上下文（如 http://gateway.example.com）：
     // 浏览器保留 getRandomValues，但 window.crypto.randomUUID 是 undefined
-    const mockGetRandomValues = vi.fn((array: Uint8Array) => {
+    const mockGetRandomValues = vi.fn((array: Uint8Array<ArrayBuffer>) => {
       return originalCrypto.getRandomValues(array);
     });
 
@@ -78,7 +78,7 @@ describe('randomId 唯一 ID 生成单点与能力降级测试', () => {
   it('4. 碰撞与唯一性验证：非安全上下文下连续生成 1000 个 ID 不重复', () => {
     // 在非安全上下文下
     const insecureCrypto = {
-      getRandomValues: (array: Uint8Array) => originalCrypto.getRandomValues(array),
+      getRandomValues: (array: Uint8Array<ArrayBuffer>) => originalCrypto.getRandomValues(array),
       randomUUID: undefined,
     };
     vi.stubGlobal('crypto', insecureCrypto);
@@ -99,7 +99,7 @@ describe('非安全上下文回归断言：API 拦截器与 Token 刷新链路�
   beforeEach(() => {
     // 每个用例均强制在非安全上下文（无 randomUUID）下运行
     const insecureCrypto = {
-      getRandomValues: (array: Uint8Array) => originalCrypto.getRandomValues(array),
+      getRandomValues: (array: Uint8Array<ArrayBuffer>) => originalCrypto.getRandomValues(array),
       randomUUID: undefined,
     };
     vi.stubGlobal('crypto', insecureCrypto);
@@ -182,8 +182,8 @@ describe('非安全上下文回归断言：API 拦截器与 Token 刷新链路�
       expiresIn: 3600,
       refreshExpiresIn: 7200,
       sessionId: 'session-refresh-test',
-      userId: 1,
-      accountId: 100,
+      userId: '1',
+      accountId: '100',
       username: 'test_admin',
       userType: 'ADMIN_SUB_ACCOUNT',
     });
@@ -204,8 +204,8 @@ describe('非安全上下文回归断言：API 拦截器与 Token 刷新链路�
             expiresIn: 3600,
             refreshExpiresIn: 7200,
             sessionId: 'session-refresh-test',
-            userId: 1,
-            accountId: 100,
+            userId: '1',
+            accountId: '100',
             username: 'test_admin',
             userType: 'ADMIN_SUB_ACCOUNT',
           },

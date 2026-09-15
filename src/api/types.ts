@@ -32,8 +32,8 @@ export interface TokenResponse {
   expiresIn: number;
   refreshExpiresIn: number;
   sessionId: string;
-  userId: number | null;
-  accountId: number | null;
+  userId: string | null;
+  accountId: string | null;
   username: string | null;
   userType: string | null;
 }

@@ -69,7 +69,7 @@ export const ChannelCredentialsPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<ChannelCredentialDTO | null>(null);
 
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
-  const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const [dataScopeModalOpen, setDataScopeModalOpen] = useState(false);
   const [scopedCredential, setScopedCredential] = useState<ChannelCredentialDTO | null>(null);

@@ -10,25 +10,27 @@ const { Title, Text } = Typography;
 
 export const SessionsPage: React.FC = () => {
   const [sessions, setSessions] = useState<AuthSessionDTO[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const clearAuth = useAuthStore((state) => state.clear);
   const navigate = useNavigate();
 
-  const fetchSessions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await authApi.getSessions();
-      setSessions(data);
-    } catch (err) {
-      console.error('获取会话列表失败', err);
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    return authApi
+      .getSessions()
+      .then((data) => setSessions(data))
+      .catch((err) => console.error('获取会话列表失败', err))
+      .finally(() => setLoading(false));
   }, []);
 
+  // 挂载即拉取：初次渲染已处于 loading 态，effect 内只做异步回调写入
   useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+    void load();
+  }, [load]);
+
+  const fetchSessions = () => {
+    setLoading(true);
+    void load();
+  };
 
   const handleRevoke = async (sessionId: string) => {
     try {

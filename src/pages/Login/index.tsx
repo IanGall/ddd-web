@@ -83,7 +83,7 @@ export const LoginPage: React.FC = () => {
 
         {errorMessage && (
           <Alert
-            message={errorMessage}
+            title={errorMessage}
             type="error"
             showIcon
             closable

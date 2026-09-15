@@ -17,26 +17,35 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
 
   const isEdit = Boolean(user);
 
-  useEffect(() => {
-    if (open) {
+  // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
+  // 避免在 effect 同步主体里 setState 造成级联渲染
+  const openKey = open ? (user ? String(user.id) : 'new') : null;
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (openKey !== loadedKey) {
+    setLoadedKey(openKey);
+    if (openKey !== null) {
       setFormError(null);
-      if (user) {
-        form.setFieldsValue({
-          username: user.username,
-          password: '',
-          displayName: user.displayName || '',
-          email: user.email || '',
-          mobile: user.mobile || '',
-          status: user.status,
-        });
-      } else {
-        form.resetFields();
-        form.setFieldsValue({
-          status: true,
-        });
-      }
     }
-  }, [open, user, form]);
+  }
+
+  useEffect(() => {
+    if (!openKey) return;
+    if (user) {
+      form.setFieldsValue({
+        username: user.username,
+        password: '',
+        displayName: user.displayName || '',
+        email: user.email || '',
+        mobile: user.mobile || '',
+        status: user.status,
+      });
+    } else {
+      form.resetFields();
+      form.setFieldsValue({
+        status: true,
+      });
+    }
+  }, [openKey, user, form]);
 
   const handleSubmit = async () => {
     try {
@@ -105,7 +114,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
     >
       {formError && (
         <Alert
-          message={formError}
+          title={formError}
           type="error"
           showIcon
           closable

@@ -22,7 +22,7 @@ import { Navigate } from 'react-router-dom';
 import { rbacApi, type RbacPermissionDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
 import { PermissionFormModal } from './PermissionFormModal';
-import { buildPermissionTree } from './utils';
+import { buildPermissionTree, ROOT_PARENT_ID } from './utils';
 
 const { Title, Text } = Typography;
 
@@ -39,7 +39,7 @@ export const PermissionListPage: React.FC = () => {
     permCode?: string;
     permName?: string;
     permType?: number;
-    parentId?: number;
+    parentId?: string;
     status?: boolean;
   }>({});
 
@@ -82,7 +82,8 @@ export const PermissionListPage: React.FC = () => {
       permCode: values.permCode ? values.permCode.trim() : undefined,
       permName: values.permName ? values.permName.trim() : undefined,
       permType: values.permType,
-      parentId: typeof values.parentId === 'number' ? values.parentId : undefined,
+      // 筛选框是数字输入，标识出网为字符串，这里在边界处转换
+      parentId: typeof values.parentId === 'number' ? String(values.parentId) : undefined,
       status: values.status,
     });
   };
@@ -93,7 +94,7 @@ export const PermissionListPage: React.FC = () => {
     setFilterParams({});
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     try {
       await rbacApi.deletePermission(id);
       message.success('权限项已成功删除');
@@ -144,7 +145,8 @@ export const PermissionListPage: React.FC = () => {
       dataIndex: 'parentId',
       key: 'parentId',
       width: 90,
-      render: (val?: number) => (val === 0 ? <Text type="secondary">0 (根)</Text> : (val ?? '-')),
+      render: (val?: string) =>
+        val === ROOT_PARENT_ID ? <Text type="secondary">0 (根)</Text> : (val ?? '-'),
     },
     {
       title: '路由 / 接口路径',
