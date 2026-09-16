@@ -6,11 +6,13 @@
 
 作为 `ian-ddd-gateway` 网关管理端接口（`/api/admin/**`）的权威第一方消费者，本仓负责管理端认证与登录、有效权限引导、RBAC 用户/角色/权限管理、渠道凭证管理以及我的会话管理等能力的前端呈现。
 
+**架构决策记录（ADR）与术语表见 [`docs/`](docs/)**：`docs/adr/` 记录「为什么这样定、代价是什么、下次改要注意什么」；[`docs/glossary.md`](docs/glossary.md) 收录本仓特有术语。改动样式/组件前建议先读 `docs/adr/`。
+
 ## 2. 与后端仓的关系
 
 - **同级目录**：在开发工作区中，`ddd-web` 与后端核心仓 `ddd`、脚手架仓 `ddd-scaffold` 保持同级检出（`~/IdeaProjects/ian-ddd/ddd-web`）。
 - **工具链隔离**：独立仓隔离 Java/Maven 与 Node/pnpm 工具链，前端构建与提交不触发后端全量构建（Checkstyle、JaCoCo 门禁等）。
-- **契约权威**：接口契约以 `docs/plans/admin-web-plan.md` 为唯一事实来源，前端严格对齐网关 REST 契约。
+- **契约权威**：接口契约以**工作区根目录**的 `../docs/plans/admin-web-plan.md` 为唯一事实来源（该文件**不在本仓内、也不在任何 git 仓内**，与 `ddd`/`ddd-scaffold` 共享同一份），前端严格对齐网关 REST 契约。
 
 ## 3. 本地启动与开发
 
@@ -80,6 +82,7 @@ bash deploy/deploy-local.sh
 1. **令牌仅存内存**：`accessToken` 与 `refreshToken` 仅保存在 Zustand 内存状态中，严禁写入 `localStorage`、`sessionStorage`、URL 或日志。
 2. **Refresh Token 单飞串行化**：后端对于同一 Refresh Token 的并发请求视为重放并撤销整个设备会话族。前端在 401 触发时通过互斥锁/共享 Promise 确保全局同一时刻仅发起一次刷新请求，其余并发请求排队等待刷新结果后重放。
 3. **设备指纹**：`deviceId` 仅在内存中生成一次并复用，会话关闭即销毁。
+4. **主题偏好除外条款**：`localStorage` 中**仅允许** `ddd-web-theme` 一个键（值为 `light` / `dark` / `system`）。主题偏好不是敏感数据，与第 1 条「令牌仅存内存」的约定**不冲突**；但**严禁**把访问令牌、`channelSecret`、`deviceId` 或任何凭证与该键同源持久化。
 
 ## 6. 样式与主题约定
 
@@ -92,7 +95,7 @@ bash deploy/deploy-local.sh
 ### 6.2 三条规则
 
 1. **颜色只来自主题变量**：一律用 `bg-background` / `text-foreground` / `text-muted-foreground` / `border-border` / `bg-card` / `bg-primary` / `text-destructive` / `bg-muted` / `bg-sidebar-*` 等；禁止颜色字面量与 Tailwind 调色板色类。
-2. **src/components/ui/ 是生成物，不手改**：需要扩展能力时在 `src/components/<Name>/` 包一层（范例：`LoadingButton`、`ClearableSelect`、`ConfirmPopover`、`TagInput`）。
+2. **src/components/ui/ 是生成物，不手改**：需要扩展能力时在 `src/components/<Name>/` 包一层（范例：`LoadingButton`、`ClearableSelect`、`ConfirmPopover`、`TagInput`、`StatusBadge`、`Tree`、`DataTable`、`ThemeToggle`）。**包括「改不了默认行为」的情况也在消费侧解决**——例如 `SelectContent` 的 `alignItemWithTrigger` 默认 `true`（弹层会压住触发器），本仓在仅有的两处消费点显式传 `false`。
 3. **业务语义色只走 StatusBadge 的语义变体**（12 个）：禁止在页面里写颜色类；**禁止用颜色名命名变体**（同一颜色承载不同语义时必须拆开，例如 green 拆成 `type-menu` 与 `current`）。
 
 ### 6.3 红线（已脚本化，见 scripts/check-style.sh，可 pnpm check-style）
@@ -103,13 +106,18 @@ bash deploy/deploy-local.sh
 4. **`asChild` 作为独立单词**：须为 0（Base UI 用 `render`；匹配时用 `grep -rnw`，避免误命中 `hasChildren`）。
 5. **`@radix-ui`**：须为 0（本仓用 Base UI，不用 Radix）。
 6. **十六进制颜色字面量**：除 `src/lib/palette.ts` 外，`src` 下十六进制颜色字面量（`#[0-9a-fA-F]{3,8}`）须为 0（显式排除 `src/test/` 断言）。
+7. **生成物补丁守位**：`src/hooks/use-mobile.ts` 必须包含真实调用 `return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);`。防止 `shadcn add --overwrite` 回退我们的补丁——回退后 `pnpm lint` 也会失败，但那条报错不指向真正原因，故用这条更明确的守卫。
 
 ### 6.4 例外
 
-- `src/lib/palette.ts` 是唯一允许出现颜色字面量的文件（`DATA_PALETTE` 四色 + `hexToRgba`），仅用于数据可视化。
+- `src/lib/palette.ts` 是唯一允许出现颜色字面量的文件（`DATA_PALETTE` 的 light/dark 双值 + `hexToRgba` + `resolveDataAccent`），仅用于数据可视化。
 - `StatusBadge` 内部允许用 Tailwind 调色板类表达状态色（shadcn 主题里没有状态色）。
 - `src/components/ui/scroll-area.tsx` 曾删掉一行未被使用的 `import * as React`，否则 TS6133 会让 `pnpm build` 失败。
 - `src/hooks/use-mobile.ts` 已手工改为 `useSyncExternalStore`（避免 `react-hooks/set-state-in-effect`）；若被 shadcn 覆盖需重新应用。
+- **`.dark` 下成对覆写 `--sidebar-primary` 与 `--sidebar-primary-foreground`**：注册表暗色值是紫色 `oklch(0.488 0.243 264.376)`，会让品牌 logo 方块与用户头像变紫，故改为与全局主色一致的中性值。**必须成对改**——注册表的暗色前景近白，只改主色会造成白底白字。这是对注册表默认值的**刻意偏离**（详见 `docs/adr/0004`）。
+- **Sonner 的 `theme` 由 `App.tsx` 以 prop 覆盖传入**（读 `resolvedTheme`），因此**不改** `src/components/ui/sonner.tsx`——它的 `{...props}` 在 `theme={theme}` 之后展开，外部 prop 会覆盖内部值。
+
+> 上述偏离**严格收敛于**：`ui/scroll-area.tsx` 一处、`hooks/use-mobile.ts` 一处、`.dark` 的两个变量、以及 `App.tsx` 传 `Toaster` 的 `theme`。不存在第 3 处未经记录的手改（可用 `grep -rn "//.*[一-龥]" src/components/ui/` 复核生成物里没有我们的注释）。
 
 ### 6.5 主题层落点
 
@@ -117,6 +125,12 @@ bash deploy/deploy-local.sh
 - **`@theme inline` 的 `--color-*` 映射块必须自己维护**：`shadcn/tailwind.css` 只提供 `data-*` 变体与若干 `@utility`，**不含颜色映射**，删掉它 `bg-background` 这类类会全部失效。
 - **`@custom-variant dark (&:is(.dark *))` 必须保留**：Tailwind v4 的 `dark:` 默认走 `prefers-color-scheme`；不改成类变体时，用户系统为深色模式会让 `dark:` 工具类生效而 `:root` 变量不变，配色半深半浅。
 - **换肤只改 `:root` 与 `.dark`**。
+- **深色模式接线**：`next-themes` 的 `ThemeProvider(attribute="class")` 位于 `QueryClientProvider` 与 `TooltipProvider` 之间；`<Toaster>` 的 `theme` 跟随 `resolvedTheme`。
+- **防闪烁脚本必须手写**（`index.html` 的 `<head>`、模块入口之前）：next-themes 注入的那个脚本是随 React 渲染插入的，在 SPA 里**首帧之后**才执行，起不到作用（它为 Next.js SSR 设计），且 `scriptProps` 无法关闭注入。
+- **主题存储键在两处硬编码**：`src/lib/theme.ts` 的 `THEME_STORAGE_KEY` 与 `index.html` 内联脚本里的 `'ddd-web-theme'` 字符串——脚本无法 `import`，**改一处必须同步改另一处**。
+- **变量完整性有守卫**：`src/test/theme-vars.test.ts` + `src/test/fixtures/neutral-inline-colors.light.json` 断言 `:root`（32 个，含 `--radius`）、`.dark`（31 个，**刻意不含** `--radius`，继承同值）、`@theme inline`（31 条 `--color-*`）与注册表快照一致。**改 `src/index.css` 的变量块后须同步更新快照。** 这条守卫防的是一起真实事故：`:root` 曾漏 `--radius` → `--radius-lg: var(--radius)` 解析为空 → **全站圆角归零**，而当时 189 个用例全绿、`pnpm build` 也通过（jsdom 不加载 Tailwind，构建成功不代表 CSS 变量有值）。
+- **新增/修改数据强调色**必须同步 `src/test/palette.test.ts` 里的对比度（对暗底 ≥ 4.5）与色相（与浅色值相差 ≤ 20°）守卫。
+- 决策背景见 `docs/adr/0004-主题源与暗色接线.md`。
 
 ### 6.6 基础设施约定
 
@@ -124,4 +138,9 @@ bash deploy/deploy-local.sh
 - **表单规范**：**Base UI 下没有 Form 组件**，必须用 `Controller` + `Field` 家族；约定 `data-invalid` 加在 `<Field>`、`aria-invalid` 加在控件、错误用 `<FieldError errors={[fieldState.error]} />`。
 - **生成物格式化隔离**：`src/components/ui/` 已加入 `.prettierignore`（vendored 生成物），因此新增 shadcn 组件不会让 `pnpm format` 变红。
 - **样式回归无法用 jsdom 测试发现**：vitest 配置独立于 `vite.config.ts`、不挂 Tailwind 插件、也不套 Provider，故测试里 Tailwind 与主题都不生效——测试只能守住行为与文案，样式必须真机核对。
+- **改这几样必须先真机核对**：`SidebarProvider` 的 `collapsible`、`--sidebar-width`、响应式断点前缀（`md:`/`lg:` 等）。原因是 jsdom 里 `hidden`/`md:block` 这类前缀与 `matchMedia` 都不真实生效（`src/test/setup.ts` 的 stub 恒返回 `matches: false`），单测通过并不代表窄屏正确。同理，改 `collapsible` 会让 `src/hooks/use-mobile.ts` 的代码路径从「不可达」变成「被真实走到」。
 - **安全约定保留**：访问令牌仅存内存、refresh 单飞、deviceId 内存化；**`channelSecret` 严禁进入任何持久化存储或日志**。
+
+## 7. 已知问题
+
+- **`/favicon.ico` 返回 404**：任何页面加载都会请求该路径并得到 404（`index.html` 未声明图标，`nginx.conf` 也未提供）。属于外观层面的小瑕疵、不影响功能。处理方式二选一：① 提供一个真实的图标资源并在 `index.html` 用 `<link rel="icon">` 声明；② 若暂不需要图标，在 `index.html` 加 `<link rel="icon" href="data:,">` 以消除该请求。**本项目尚未提供品牌图标资产，故此项留待决定。**
