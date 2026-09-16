@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { ThemeProvider } from 'next-themes';
 import { User } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { DATA_PALETTE, hexToRgba } from '@/lib/palette';
@@ -40,14 +41,14 @@ describe('StatCard 组件', () => {
     expect(dimmedValueNode).not.toHaveClass('text-foreground');
   });
 
-  it('4. 传入 icon 时徽章被渲染，且徽章的背景色是 hexToRgba(DATA_PALETTE[accent], 0.12) 的结果', () => {
+  it('4. 传入 icon 时徽章被渲染，且徽章的背景色是 hexToRgba(DATA_PALETTE[accent].light, 0.12) 的结果', () => {
     // 4.1 未传入 icon 时不渲染徽章容器
     const { container, rerender } = render(
       <StatCard title="用户总数" value={42} accent="orange" />,
     );
     expect(container.querySelector('.rounded-full')).toBeNull();
 
-    // 4.2 传入 icon 与 accent="orange"
+    // 4.2 传入 icon 与 accent="orange"（无 Provider 走 light 兜底）
     rerender(
       <StatCard
         title="用户总数"
@@ -59,8 +60,8 @@ describe('StatCard 组件', () => {
     const badge = container.querySelector('.rounded-full') as HTMLElement;
     expect(badge).toBeInTheDocument();
     expect(badge).toContainElement(screen.getByTestId('user-icon'));
-    expect(badge.style.backgroundColor).toBe(hexToRgba(DATA_PALETTE.orange, 0.12));
-    // DATA_PALETTE.orange 为 #F0562B -> rgb(240, 86, 43)
+    expect(badge.style.backgroundColor).toBe(hexToRgba(DATA_PALETTE.orange.light, 0.12));
+    // DATA_PALETTE.orange.light 为 #F0562B -> rgb(240, 86, 43)
     expect(badge.style.color).toBe('rgb(240, 86, 43)');
 
     // 4.3 accent 缺省时使用回退样式
@@ -69,5 +70,30 @@ describe('StatCard 组件', () => {
     expect(defaultBadge).toBeInTheDocument();
     expect(defaultBadge).toHaveClass('bg-muted');
     expect(defaultBadge).toHaveClass('text-muted-foreground');
+  });
+
+  it('5. 在 ThemeProvider forcedTheme="dark" 下，徽章使用 dark 强调色与 0.18 的背景透明度', () => {
+    render(
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        forcedTheme="dark"
+        storageKey="test-theme"
+      >
+        <StatCard
+          title="用户总数"
+          value={42}
+          icon={<User data-testid="user-icon" />}
+          accent="orange"
+        />
+      </ThemeProvider>,
+    );
+
+    const badge = screen.getByTestId('user-icon').parentElement as HTMLElement;
+    expect(badge).toBeInTheDocument();
+    expect(badge.style.backgroundColor).toBe(hexToRgba(DATA_PALETTE.orange.dark, 0.18));
+    // DATA_PALETTE.orange.dark 为 #FF8A5C -> rgb(255, 138, 92)
+    expect(badge.style.color).toBe('rgb(255, 138, 92)');
   });
 });

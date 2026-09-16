@@ -1,7 +1,14 @@
 import React from 'react';
+import { useTheme } from 'next-themes';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { DATA_PALETTE, hexToRgba, type DataAccent } from '@/lib/palette';
+import {
+  DATA_ACCENT_BADGE_ALPHA,
+  DATA_PALETTE,
+  hexToRgba,
+  resolveDataAccent,
+  type DataAccent,
+} from '@/lib/palette';
 import { cn } from 'cn';
 
 export interface StatCardProps {
@@ -25,13 +32,16 @@ export const StatCard: React.FC<StatCardProps> = ({
   tip,
   className,
 }) => {
-  const badgeStyle: React.CSSProperties | undefined =
-    accent && DATA_PALETTE[accent]
-      ? {
-          backgroundColor: hexToRgba(DATA_PALETTE[accent], 0.12),
-          color: DATA_PALETTE[accent],
-        }
-      : undefined;
+  const { resolvedTheme, forcedTheme } = useTheme();
+  const mode = (forcedTheme ?? resolvedTheme) === 'dark' ? 'dark' : 'light';
+  const accentColor = accent && DATA_PALETTE[accent] ? resolveDataAccent(accent, mode) : undefined;
+
+  const badgeStyle: React.CSSProperties | undefined = accentColor
+    ? {
+        backgroundColor: hexToRgba(accentColor, DATA_ACCENT_BADGE_ALPHA[mode]),
+        color: accentColor,
+      }
+    : undefined;
 
   const card = (
     <Card size="sm" className={className}>

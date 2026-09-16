@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth';
 import { useLogout } from '@/hooks/useLogout';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export interface HeaderBarProps {
   keyword: string;
@@ -54,6 +55,8 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         >
           <Monitor className="size-4" />
         </Button>
+
+        <ThemeToggle />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="flex cursor-pointer items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
