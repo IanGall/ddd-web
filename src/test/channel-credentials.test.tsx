@@ -148,6 +148,41 @@ describe('ChannelCredentials Components', () => {
       expect(handleClose).not.toHaveBeenCalled();
       expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
+
+    it('换另一个凭证重开后，勾选状态必须归位', () => {
+      const handleClose = vi.fn();
+      const { rerender } = render(
+        <SecretModal open={true} data={mockSecretData} onClose={handleClose} />,
+      );
+
+      const checkbox = screen.getByLabelText(/我已复制并妥善保存该渠道密钥/i);
+      const confirmCloseBtn = screen.getByRole('button', { name: /我已保存，关闭窗口/i });
+
+      expect(confirmCloseBtn).toBeDisabled();
+
+      // 用户勾选后，按钮变为可用
+      fireEvent.click(checkbox);
+      expect(confirmCloseBtn).not.toBeDisabled();
+
+      // 换另一个凭证（不同 channelCode + 不同 secretVersion）重渲染同一个组件
+      const anotherSecretData = {
+        id: '100',
+        channelCode: 'CH_WXPAY_02',
+        channelSecret: 'sec_another_secret_key_999',
+        secretVersion: 2,
+      };
+      rerender(<SecretModal open={true} data={anotherSecretData} onClose={handleClose} />);
+
+      // 断言「我已保存，关闭窗口」按钮回到 disabled、点击且 onClose 未被调用
+      expect(confirmCloseBtn).toBeDisabled();
+      fireEvent.click(confirmCloseBtn);
+      expect(handleClose).not.toHaveBeenCalled();
+
+      // 新凭证材料正常展示
+      expect(screen.getByText('CH_WXPAY_02')).toBeInTheDocument();
+      expect(screen.getByText('sec_another_secret_key_999')).toBeInTheDocument();
+      expect(screen.getByText('v2')).toBeInTheDocument();
+    });
   });
 
   describe('ChannelCredentialsPage 权限与列表渲染', () => {
