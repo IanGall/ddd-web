@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Statistic, Tooltip, Typography, theme } from 'antd';
-import { DATA_PALETTE, hexToRgba, type DataAccent } from '@/theme';
+import { DATA_PALETTE, hexToRgba, type DataAccent } from '@/lib/palette';
 
 const { Text } = Typography;
 

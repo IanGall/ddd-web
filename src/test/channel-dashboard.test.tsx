@@ -9,21 +9,6 @@ import { authApi } from '@/api/auth';
 import { request } from '@/api/client';
 import { ApiError, ResponseCode } from '@/api/types';
 
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 vi.mock('@/api/channel', () => ({
   channelApi: {
     list: vi.fn(),

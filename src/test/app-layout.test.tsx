@@ -4,21 +4,6 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout } from '@/layout/AppLayout';
 import { useAuthStore } from '@/store/auth';
 
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 vi.mock('@/api/auth', () => ({
   authApi: {
     logout: vi.fn().mockResolvedValue(null),

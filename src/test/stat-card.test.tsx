@@ -5,21 +5,6 @@ import { UserOutlined } from '@ant-design/icons';
 import { StatCard } from '@/components/StatCard';
 import { DATA_PALETTE, hexToRgba, themeConfig } from '@/theme';
 
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 describe('StatCard 组件', () => {
   it('1. title 与 value 都以原始文本节点渲染，getByText 能精确且唯一匹配', () => {
     render(<StatCard title="用户总数" value={42} />);
