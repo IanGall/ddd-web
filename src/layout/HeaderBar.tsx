@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuthStore } from '@/store/auth';
 import { useLogout } from '@/hooks/useLogout';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -34,15 +35,18 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
   const avatarText = username?.trim().slice(0, 2) || '';
 
   return (
-    <header className="flex h-14 items-center justify-between gap-4 border-b border-border bg-background px-6">
-      <div className="relative w-[360px]">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="搜索菜单"
-          className="h-9 rounded-full pr-4 pl-9"
-          value={keyword}
-          onChange={(e) => onKeywordChange(e.target.value)}
-        />
+    <header className="flex h-14 items-center justify-between gap-3 border-b border-border bg-background px-4 md:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <SidebarTrigger />
+        <div className="relative w-full max-w-[360px]">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="搜索菜单"
+            className="h-9 rounded-full pr-4 pl-9"
+            value={keyword}
+            onChange={(e) => onKeywordChange(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-3">

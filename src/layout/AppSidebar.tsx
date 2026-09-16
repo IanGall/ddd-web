@@ -15,6 +15,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import type { DomainMenuItem } from './menuFilter';
@@ -29,6 +30,7 @@ export interface AppSidebarProps {
 }
 
 export const AppSidebar: React.FC<AppSidebarProps> = ({ items, openKeys, onOpenKeysChange }) => {
+  const { setOpenMobile } = useSidebar();
   const location = useLocation();
   const pathname = location.pathname;
 
@@ -79,7 +81,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ items, openKeys, onOpenK
 
     return (
       <SidebarMenuSubItem key={item.key}>
-        <SidebarMenuSubButton render={<Link to={item.key} />} isActive={pathname === item.key}>
+        <SidebarMenuSubButton
+          render={<Link to={item.key} />}
+          isActive={pathname === item.key}
+          onClick={() => setOpenMobile(false)}
+        >
           {item.icon}
           <span>{item.label}</span>
         </SidebarMenuSubButton>
@@ -124,7 +130,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ items, openKeys, onOpenK
 
     return (
       <SidebarMenuItem key={item.key}>
-        <SidebarMenuButton render={<Link to={item.key} />} isActive={pathname === item.key}>
+        <SidebarMenuButton
+          render={<Link to={item.key} />}
+          isActive={pathname === item.key}
+          onClick={() => setOpenMobile(false)}
+        >
           {item.icon}
           <span>{item.label}</span>
         </SidebarMenuButton>
@@ -133,7 +143,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ items, openKeys, onOpenK
   };
 
   return (
-    <Sidebar collapsible="none" className="w-[260px] border-r border-sidebar-border bg-sidebar">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="p-0">
         <BrandBlock />
       </SidebarHeader>
@@ -178,6 +188,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ items, openKeys, onOpenK
                   <SidebarMenuButton
                     render={<Link to={item.key} />}
                     isActive={pathname === item.key}
+                    onClick={() => setOpenMobile(false)}
                   >
                     {item.icon}
                     <span>{item.label}</span>

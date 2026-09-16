@@ -69,7 +69,15 @@ export const AppLayout: React.FC = () => {
   );
 
   return (
-    <SidebarProvider defaultOpen className="h-svh overflow-hidden">
+    <SidebarProvider
+      defaultOpen
+      className="h-svh overflow-hidden"
+      style={
+        {
+          '--sidebar-width': '260px',
+        } as React.CSSProperties
+      }
+    >
       <AppSidebar
         items={filteredItems}
         openKeys={effectiveOpenKeys}
