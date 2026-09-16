@@ -234,7 +234,7 @@ export function DataTable<T extends RowData>({
                   <SelectTrigger size="sm" className="h-8 w-28" aria-label="每页条数">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent alignItemWithTrigger={false}>
                     {pageSizeOptions.map((size) => (
                       <SelectItem key={size} value={String(size)}>
                         {size} 条/页

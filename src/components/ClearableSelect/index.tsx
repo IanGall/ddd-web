@@ -80,7 +80,7 @@ export function ClearableSelect<T>({
           </span>
         )}
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent alignItemWithTrigger={false}>
         {options.map((option, index) => (
           <SelectItem
             key={`${String(option.value)}-${index}`}
