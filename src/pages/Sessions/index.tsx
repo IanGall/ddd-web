@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Card, message, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { Button, Card, message, Popconfirm, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { authApi } from '@/api/auth';
 import type { AuthSessionDTO } from '@/api/types';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
-
-const { Title, Text } = Typography;
+import { PageHeader } from '@/components/PageHeader';
 
 export const SessionsPage: React.FC = () => {
   const [sessions, setSessions] = useState<AuthSessionDTO[]>([]);
@@ -105,36 +104,35 @@ export const SessionsPage: React.FC = () => {
   ];
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Title level={4} className="m-0">
-            我的会话
-          </Title>
-          <Text type="secondary">查看已建立登录会话并可随时吊销非本设备登录</Text>
-        </div>
-        <Space>
-          <Button onClick={fetchSessions} loading={loading}>
-            刷新
-          </Button>
-          <Popconfirm
-            title="确定要强制登出全部会话吗？本设备也需重新登录。"
-            onConfirm={handleLogoutAll}
-            okText="确定登出"
-            cancelText="取消"
-          >
-            <Button danger>登出全部会话</Button>
-          </Popconfirm>
-        </Space>
-      </div>
-
-      <Table
-        rowKey="sessionId"
-        columns={columns}
-        dataSource={sessions}
-        loading={loading}
-        pagination={false}
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="我的会话"
+        description="查看已建立登录会话并可随时吊销非本设备登录"
+        extra={
+          <Space>
+            <Button onClick={fetchSessions} loading={loading}>
+              刷新
+            </Button>
+            <Popconfirm
+              title="确定要强制登出全部会话吗？本设备也需重新登录。"
+              onConfirm={handleLogoutAll}
+              okText="确定登出"
+              cancelText="取消"
+            >
+              <Button danger>登出全部会话</Button>
+            </Popconfirm>
+          </Space>
+        }
       />
-    </Card>
+      <Card>
+        <Table
+          rowKey="sessionId"
+          columns={columns}
+          dataSource={sessions}
+          loading={loading}
+          pagination={false}
+        />
+      </Card>
+    </div>
   );
 };

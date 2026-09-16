@@ -18,10 +18,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
 import { rbacApi, type RbacRoleDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
+import { PageHeader } from '@/components/PageHeader';
 import { RoleFormModal } from './RoleFormModal';
 import { RolePermissionModal } from './RolePermissionModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const RoleListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -179,106 +180,104 @@ export const RoleListPage: React.FC = () => {
   }
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Title level={4} className="m-0">
-            角色管理
-          </Title>
-          <Text type="secondary">管理系统角色及其关联的权限集合</Text>
-        </div>
-
-        {hasPermission('rbac:role:create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingRole(null);
-              setFormModalOpen(true);
-            }}
-          >
-            新增角色
-          </Button>
-        )}
-      </div>
-
-      {/* 搜索过滤表单 */}
-      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
-        <Form.Item name="roleCode" label="角色编码">
-          <Input placeholder="输入编码搜索" maxLength={64} allowClear />
-        </Form.Item>
-
-        <Form.Item name="roleName" label="角色名称">
-          <Input placeholder="输入名称搜索" maxLength={128} allowClear />
-        </Form.Item>
-
-        <Form.Item name="status" label="状态">
-          <Select
-            placeholder="角色状态"
-            allowClear
-            className="w-[120px]"
-            options={[
-              { label: '启用', value: true },
-              { label: '停用', value: false },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item>
-          <Space>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              查询
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="角色管理"
+        description="管理系统角色及其关联的权限集合"
+        extra={
+          hasPermission('rbac:role:create') && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingRole(null);
+                setFormModalOpen(true);
+              }}
+            >
+              新增角色
             </Button>
-            <Button icon={<ReloadOutlined />} onClick={handleReset}>
-              重置
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-
-      {/* 角色数据表格 */}
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.list || []}
-        loading={isLoading}
-        pagination={{
-          current: pageNum,
-          pageSize,
-          total: data?.total || 0,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, size) => {
-            setPageNum(page);
-            setPageSize(size);
-          },
-        }}
+          )
+        }
       />
+      <Card>
+        {/* 搜索过滤表单 */}
+        <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
+          <Form.Item name="roleCode" label="角色编码">
+            <Input placeholder="输入编码搜索" maxLength={64} allowClear />
+          </Form.Item>
 
-      {/* 新增/编辑角色弹窗 */}
-      <RoleFormModal
-        open={formModalOpen}
-        role={editingRole}
-        onClose={() => setFormModalOpen(false)}
-        onSuccess={() => {
-          setFormModalOpen(false);
-          message.success(editingRole ? '角色已更新' : '角色创建成功');
-          queryClient.invalidateQueries({ queryKey: ['rbac-roles'] });
-        }}
-      />
+          <Form.Item name="roleName" label="角色名称">
+            <Input placeholder="输入名称搜索" maxLength={128} allowClear />
+          </Form.Item>
 
-      {/* 分配权限弹窗 */}
-      <RolePermissionModal
-        open={permissionModalOpen}
-        role={authorizingRole}
-        onClose={() => setPermissionModalOpen(false)}
-        onSuccess={() => {
-          setPermissionModalOpen(false);
-          message.success('角色权限已更新');
-          refetch();
-        }}
-      />
-    </Card>
+          <Form.Item name="status" label="状态">
+            <Select
+              placeholder="角色状态"
+              allowClear
+              className="w-[120px]"
+              options={[
+                { label: '启用', value: true },
+                { label: '停用', value: false },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                查询
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>
+                重置
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+
+        {/* 角色数据表格 */}
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.list || []}
+          loading={isLoading}
+          pagination={{
+            current: pageNum,
+            pageSize,
+            total: data?.total || 0,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+            onChange: (page, size) => {
+              setPageNum(page);
+              setPageSize(size);
+            },
+          }}
+        />
+
+        {/* 新增/编辑角色弹窗 */}
+        <RoleFormModal
+          open={formModalOpen}
+          role={editingRole}
+          onClose={() => setFormModalOpen(false)}
+          onSuccess={() => {
+            setFormModalOpen(false);
+            message.success(editingRole ? '角色已更新' : '角色创建成功');
+            queryClient.invalidateQueries({ queryKey: ['rbac-roles'] });
+          }}
+        />
+
+        {/* 分配权限弹窗 */}
+        <RolePermissionModal
+          open={permissionModalOpen}
+          role={authorizingRole}
+          onClose={() => setPermissionModalOpen(false)}
+          onSuccess={() => {
+            setPermissionModalOpen(false);
+            message.success('角色权限已更新');
+            refetch();
+          }}
+        />
+      </Card>
+    </div>
   );
 };

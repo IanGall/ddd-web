@@ -21,10 +21,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
 import { rbacApi, type RbacPermissionDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
+import { PageHeader } from '@/components/PageHeader';
 import { PermissionFormModal } from './PermissionFormModal';
 import { buildPermissionTree, ROOT_PARENT_ID } from './utils';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const PermissionListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -219,124 +220,122 @@ export const PermissionListPage: React.FC = () => {
   }
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Title level={4} className="m-0">
-            权限项管理
-          </Title>
-          <Text type="secondary">管理目录、菜单与按钮三级权限节点，内置权限禁止删除</Text>
-        </div>
-
-        <Space>
-          <Radio.Group
-            value={displayMode}
-            onChange={(e) => setDisplayMode(e.target.value)}
-            optionType="button"
-            buttonStyle="solid"
-          >
-            <Radio.Button value="tree">层级树形</Radio.Button>
-            <Radio.Button value="flat">平铺列表</Radio.Button>
-          </Radio.Group>
-
-          {hasPermission('rbac:permission:create') && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setEditingPermission(null);
-                setFormModalOpen(true);
-              }}
-            >
-              新增权限项
-            </Button>
-          )}
-        </Space>
-      </div>
-
-      {/* 搜索与过滤表单 */}
-      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
-        <Form.Item name="permCode" label="权限编码">
-          <Input placeholder="支持模糊编码" maxLength={64} allowClear />
-        </Form.Item>
-
-        <Form.Item name="permName" label="权限名称">
-          <Input placeholder="支持名称模糊" maxLength={128} allowClear />
-        </Form.Item>
-
-        <Form.Item name="permType" label="类型">
-          <Select
-            placeholder="全部类型"
-            allowClear
-            className="w-[110px]"
-            options={[
-              { label: '目录', value: 1 },
-              { label: '菜单', value: 2 },
-              { label: '按钮', value: 3 },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item name="parentId" label="父节点 ID">
-          <InputNumber placeholder="0 为根" min={0} className="w-[100px]" />
-        </Form.Item>
-
-        <Form.Item name="status" label="状态">
-          <Select
-            placeholder="状态"
-            allowClear
-            className="w-[100px]"
-            options={[
-              { label: '启用', value: true },
-              { label: '停用', value: false },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="权限项管理"
+        description="管理目录、菜单与按钮三级权限节点，内置权限禁止删除"
+        extra={
           <Space>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              查询
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={handleReset}>
-              重置
-            </Button>
+            <Radio.Group
+              value={displayMode}
+              onChange={(e) => setDisplayMode(e.target.value)}
+              optionType="button"
+              buttonStyle="solid"
+            >
+              <Radio.Button value="tree">层级树形</Radio.Button>
+              <Radio.Button value="flat">平铺列表</Radio.Button>
+            </Radio.Group>
+
+            {hasPermission('rbac:permission:create') && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEditingPermission(null);
+                  setFormModalOpen(true);
+                }}
+              >
+                新增权限项
+              </Button>
+            )}
           </Space>
-        </Form.Item>
-      </Form>
-
-      {/* 权限数据表格（支持按 parentId 呈现父子层级） */}
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={tableData}
-        loading={isLoading}
-        pagination={{
-          current: pageNum,
-          pageSize,
-          total: data?.total || 0,
-          pageSizeOptions: ['20', '50', '100'],
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, size) => {
-            setPageNum(page);
-            setPageSize(size);
-          },
-        }}
+        }
       />
+      <Card>
+        {/* 搜索与过滤表单 */}
+        <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
+          <Form.Item name="permCode" label="权限编码">
+            <Input placeholder="支持模糊编码" maxLength={64} allowClear />
+          </Form.Item>
 
-      {/* 新增/编辑权限项弹窗 */}
-      <PermissionFormModal
-        open={formModalOpen}
-        permission={editingPermission}
-        allPermissions={rawList}
-        onClose={() => setFormModalOpen(false)}
-        onSuccess={() => {
-          setFormModalOpen(false);
-          message.success(editingPermission ? '权限项已更新' : '权限项创建成功');
-          queryClient.invalidateQueries({ queryKey: ['rbac-permissions'] });
-        }}
-      />
-    </Card>
+          <Form.Item name="permName" label="权限名称">
+            <Input placeholder="支持名称模糊" maxLength={128} allowClear />
+          </Form.Item>
+
+          <Form.Item name="permType" label="类型">
+            <Select
+              placeholder="全部类型"
+              allowClear
+              className="w-[110px]"
+              options={[
+                { label: '目录', value: 1 },
+                { label: '菜单', value: 2 },
+                { label: '按钮', value: 3 },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="parentId" label="父节点 ID">
+            <InputNumber placeholder="0 为根" min={0} className="w-[100px]" />
+          </Form.Item>
+
+          <Form.Item name="status" label="状态">
+            <Select
+              placeholder="状态"
+              allowClear
+              className="w-[100px]"
+              options={[
+                { label: '启用', value: true },
+                { label: '停用', value: false },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                查询
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>
+                重置
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+
+        {/* 权限数据表格（支持按 parentId 呈现父子层级） */}
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={tableData}
+          loading={isLoading}
+          pagination={{
+            current: pageNum,
+            pageSize,
+            total: data?.total || 0,
+            pageSizeOptions: ['20', '50', '100'],
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+            onChange: (page, size) => {
+              setPageNum(page);
+              setPageSize(size);
+            },
+          }}
+        />
+
+        {/* 新增/编辑权限项弹窗 */}
+        <PermissionFormModal
+          open={formModalOpen}
+          permission={editingPermission}
+          allPermissions={rawList}
+          onClose={() => setFormModalOpen(false)}
+          onSuccess={() => {
+            setFormModalOpen(false);
+            message.success(editingPermission ? '权限项已更新' : '权限项创建成功');
+            queryClient.invalidateQueries({ queryKey: ['rbac-permissions'] });
+          }}
+        />
+      </Card>
+    </div>
   );
 };

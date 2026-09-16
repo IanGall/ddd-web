@@ -39,8 +39,9 @@ import { SecretModal } from './SecretModal';
 import { CreateEditModal } from './CreateEditModal';
 import { DetailDrawer } from './DetailDrawer';
 import { DataScopeModal } from './DataScopeModal';
+import { PageHeader } from '@/components/PageHeader';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const ChannelCredentialsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -344,30 +345,23 @@ export const ChannelCredentialsPage: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="渠道凭证管理"
+        description="管理平台各业务渠道的安全访问凭据，支持密钥单次展示安全轮换与数据范围授权。"
+        extra={
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            disabled={!canCreate}
+            title={!canCreate ? '暂无创建权限 (需 rbac:channel-credential:create)' : undefined}
+            onClick={handleOpenCreate}
+          >
+            新建渠道凭证
+          </Button>
+        }
+      />
       <Card>
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <Title level={4} className="m-0">
-              渠道凭证管理
-            </Title>
-            <Text type="secondary">
-              管理平台各业务渠道的安全访问凭据，支持密钥单次展示安全轮换与数据范围授权。
-            </Text>
-          </div>
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              disabled={!canCreate}
-              title={!canCreate ? '暂无创建权限 (需 rbac:channel-credential:create)' : undefined}
-              onClick={handleOpenCreate}
-            >
-              新建渠道凭证
-            </Button>
-          </Space>
-        </div>
-
         {/* 筛选过滤表单 */}
         <Form form={searchForm} layout="horizontal">
           <Row gutter={[16, 16]}>

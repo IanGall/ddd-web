@@ -18,10 +18,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
 import { rbacApi, type RbacUserDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
+import { PageHeader } from '@/components/PageHeader';
 import { UserFormModal } from './UserFormModal';
 import { UserRoleModal } from './UserRoleModal';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const UserListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -181,102 +182,100 @@ export const UserListPage: React.FC = () => {
   }
 
   return (
-    <Card>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <Title level={4} className="m-0">
-            用户管理
-          </Title>
-          <Text type="secondary">管理当前账号下的系统管理员与子账号信息</Text>
-        </div>
-
-        {hasPermission('rbac:user:create') && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingUser(null);
-              setFormModalOpen(true);
-            }}
-          >
-            新增用户
-          </Button>
-        )}
-      </div>
-
-      {/* 搜索与过滤表单 */}
-      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
-        <Form.Item name="username" label="用户名">
-          <Input placeholder="输入用户名搜索" maxLength={64} allowClear />
-        </Form.Item>
-
-        <Form.Item name="status" label="状态">
-          <Select
-            placeholder="账号状态"
-            allowClear
-            className="w-[120px]"
-            options={[
-              { label: '启用', value: true },
-              { label: '停用', value: false },
-            ]}
-          />
-        </Form.Item>
-
-        <Form.Item>
-          <Space>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-              查询
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="用户管理"
+        description="管理当前账号下的系统管理员与子账号信息"
+        extra={
+          hasPermission('rbac:user:create') && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingUser(null);
+                setFormModalOpen(true);
+              }}
+            >
+              新增用户
             </Button>
-            <Button icon={<ReloadOutlined />} onClick={handleReset}>
-              重置
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
-
-      {/* 用户数据表格 */}
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.list || []}
-        loading={isLoading}
-        pagination={{
-          current: pageNum,
-          pageSize,
-          total: data?.total || 0,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, size) => {
-            setPageNum(page);
-            setPageSize(size);
-          },
-        }}
+          )
+        }
       />
+      <Card>
+        {/* 搜索与过滤表单 */}
+        <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
+          <Form.Item name="username" label="用户名">
+            <Input placeholder="输入用户名搜索" maxLength={64} allowClear />
+          </Form.Item>
 
-      {/* 新增/编辑用户弹窗 */}
-      <UserFormModal
-        open={formModalOpen}
-        user={editingUser}
-        onClose={() => setFormModalOpen(false)}
-        onSuccess={() => {
-          setFormModalOpen(false);
-          message.success(editingUser ? '用户已更新' : '用户创建成功');
-          queryClient.invalidateQueries({ queryKey: ['rbac-users'] });
-        }}
-      />
+          <Form.Item name="status" label="状态">
+            <Select
+              placeholder="账号状态"
+              allowClear
+              className="w-[120px]"
+              options={[
+                { label: '启用', value: true },
+                { label: '停用', value: false },
+              ]}
+            />
+          </Form.Item>
 
-      {/* 分配角色弹窗 */}
-      <UserRoleModal
-        open={roleModalOpen}
-        user={authorizingUser}
-        onClose={() => setRoleModalOpen(false)}
-        onSuccess={() => {
-          setRoleModalOpen(false);
-          message.success('角色分配已更新');
-          refetch();
-        }}
-      />
-    </Card>
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                查询
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>
+                重置
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+
+        {/* 用户数据表格 */}
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.list || []}
+          loading={isLoading}
+          pagination={{
+            current: pageNum,
+            pageSize,
+            total: data?.total || 0,
+            pageSizeOptions: ['10', '20', '50', '100'],
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+            onChange: (page, size) => {
+              setPageNum(page);
+              setPageSize(size);
+            },
+          }}
+        />
+
+        {/* 新增/编辑用户弹窗 */}
+        <UserFormModal
+          open={formModalOpen}
+          user={editingUser}
+          onClose={() => setFormModalOpen(false)}
+          onSuccess={() => {
+            setFormModalOpen(false);
+            message.success(editingUser ? '用户已更新' : '用户创建成功');
+            queryClient.invalidateQueries({ queryKey: ['rbac-users'] });
+          }}
+        />
+
+        {/* 分配角色弹窗 */}
+        <UserRoleModal
+          open={roleModalOpen}
+          user={authorizingUser}
+          onClose={() => setRoleModalOpen(false)}
+          onSuccess={() => {
+            setRoleModalOpen(false);
+            message.success('角色分配已更新');
+            refetch();
+          }}
+        />
+      </Card>
+    </div>
   );
 };
