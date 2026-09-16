@@ -1,7 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Form, Input, Modal, Switch } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacUserDTO } from '@/api/rbac';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { LoadingButton } from '@/components/LoadingButton';
+import { AppAlert } from '@/components/AppAlert';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 
 interface UserFormModalProps {
   open: boolean;
@@ -10,8 +25,43 @@ interface UserFormModalProps {
   onSuccess: () => void;
 }
 
+const makeUserSchema = (isEdit: boolean) =>
+  z.object({
+    username: z
+      .string()
+      .min(1, '请输入用户名')
+      .max(64, '用户名最长 64 个字符')
+      .regex(/^[A-Za-z0-9_.-]{1,64}$/, '用户名只能包含字母、数字、下划线、点号和短横线'),
+    password: z.string().superRefine((val, ctx) => {
+      if (!val) {
+        if (!isEdit) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: '请输入登录密码',
+          });
+        }
+        return;
+      }
+      if (val.length < 8 || val.length > 72) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '密码长度须在 8~72 位之间',
+        });
+      }
+    }),
+    displayName: z.string().max(128, '显示名称长度不能超过 128 个字符').optional(),
+    email: z
+      .string()
+      .max(128, '邮箱长度不能超过 128 个字符')
+      .refine((val) => !val || z.string().email().safeParse(val).success, '请输入合法的邮箱格式')
+      .optional(),
+    mobile: z.string().max(32, '手机号长度不能超过 32 个字符').optional(),
+    status: z.boolean(),
+  });
+
+type UserFormValues = z.infer<ReturnType<typeof makeUserSchema>>;
+
 export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClose, onSuccess }) => {
-  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -28,10 +78,24 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
     }
   }
 
+  const schema = useMemo(() => makeUserSchema(isEdit), [isEdit]);
+
+  const { control, handleSubmit, reset } = useForm<UserFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      username: '',
+      password: '',
+      displayName: '',
+      email: '',
+      mobile: '',
+      status: true,
+    },
+  });
+
   useEffect(() => {
     if (!openKey) return;
     if (user) {
-      form.setFieldsValue({
+      reset({
         username: user.username,
         password: '',
         displayName: user.displayName || '',
@@ -40,16 +104,19 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
         status: user.status,
       });
     } else {
-      form.resetFields();
-      form.setFieldsValue({
+      reset({
+        username: '',
+        password: '',
+        displayName: '',
+        email: '',
+        mobile: '',
         status: true,
       });
     }
-  }, [openKey, user, form]);
+  }, [openKey, user, reset]);
 
-  const handleSubmit = async () => {
+  const onValid = async (values: UserFormValues) => {
     try {
-      const values = await form.validateFields();
       setSubmitting(true);
       setFormError(null);
 
@@ -93,7 +160,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
           return;
         }
         setFormError(err.info || '操作失败');
-      } else if (err instanceof Error && err.name !== 'ValidateError') {
+      } else if (err instanceof Error) {
         setFormError(err.message || '操作失败');
       }
     } finally {
@@ -102,99 +169,144 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
   };
 
   return (
-    <Modal
-      title={isEdit ? `编辑用户 - ${user?.username}` : '新增用户'}
+    <Dialog
       open={open}
-      onCancel={onClose}
-      onOk={handleSubmit}
-      confirmLoading={submitting}
-      destroyOnHidden
-      okText={isEdit ? '保存' : '创建'}
-      cancelText="取消"
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      {formError && (
-        <Alert
-          title={formError}
-          type="error"
-          showIcon
-          closable
-          onClose={() => setFormError(null)}
-          className="mb-4"
-        />
-      )}
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `编辑用户 - ${user?.username}` : '新增用户'}</DialogTitle>
+        </DialogHeader>
 
-      <Form form={form} layout="vertical">
-        <Form.Item
-          label="用户名"
-          name="username"
-          rules={[
-            { required: true, message: '请输入用户名' },
-            { max: 64, message: '用户名最长 64 个字符' },
-            {
-              pattern: /^[A-Za-z0-9_.-]{1,64}$/,
-              message: '用户名只能包含字母、数字、下划线、点号和短横线',
-            },
-          ]}
-        >
-          <Input placeholder="请输入用户名（1~64位）" disabled={isEdit} maxLength={64} />
-        </Form.Item>
+        {formError && (
+          <AppAlert variant="error" title={formError} closable onClose={() => setFormError(null)} />
+        )}
 
-        <Form.Item
-          label={isEdit ? '登录密码（留空表示不修改）' : '登录密码'}
-          name="password"
-          rules={[
-            { required: !isEdit, message: '请输入登录密码' },
-            {
-              validator: (_, value) => {
-                if (!value) {
-                  if (isEdit) return Promise.resolve();
-                  return Promise.reject(new Error('请输入登录密码'));
-                }
-                if (value.length < 8 || value.length > 72) {
-                  return Promise.reject(new Error('密码长度须在 8~72 位之间'));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Input.Password
-            placeholder={isEdit ? '留空表示不修改当前密码' : '请输入 8~72 位登录密码'}
-            maxLength={72}
-          />
-        </Form.Item>
+        <form key={openKey ?? 'closed'} onSubmit={handleSubmit(onValid)}>
+          <FieldGroup>
+            <Controller
+              name="username"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="username">用户名</FieldLabel>
+                  <Input
+                    {...field}
+                    id="username"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="请输入用户名（1~64位）"
+                    disabled={isEdit}
+                    maxLength={64}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="显示名称"
-          name="displayName"
-          rules={[{ max: 128, message: '显示名称长度不能超过 128 个字符' }]}
-        >
-          <Input placeholder="请输入用户显示名称" maxLength={128} />
-        </Form.Item>
+            <Controller
+              name="password"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="password">
+                    {isEdit ? '登录密码（留空表示不修改）' : '登录密码'}
+                  </FieldLabel>
+                  <Input
+                    {...field}
+                    id="password"
+                    type="password"
+                    aria-invalid={fieldState.invalid}
+                    placeholder={isEdit ? '留空表示不修改当前密码' : '请输入 8~72 位登录密码'}
+                    maxLength={72}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="电子邮箱"
-          name="email"
-          rules={[
-            { type: 'email', message: '请输入合法的邮箱格式' },
-            { max: 128, message: '邮箱长度不能超过 128 个字符' },
-          ]}
-        >
-          <Input placeholder="name@example.com" maxLength={128} />
-        </Form.Item>
+            <Controller
+              name="displayName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="displayName">显示名称</FieldLabel>
+                  <Input
+                    {...field}
+                    id="displayName"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="请输入用户显示名称"
+                    maxLength={128}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="手机号码"
-          name="mobile"
-          rules={[{ max: 32, message: '手机号长度不能超过 32 个字符' }]}
-        >
-          <Input placeholder="请输入手机号码" maxLength={32} />
-        </Form.Item>
+            <Controller
+              name="email"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="email">电子邮箱</FieldLabel>
+                  <Input
+                    {...field}
+                    id="email"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="name@example.com"
+                    maxLength={128}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item label="账号状态" name="status" valuePropName="checked">
-          <Switch checkedChildren="启用" unCheckedChildren="停用" />
-        </Form.Item>
-      </Form>
-    </Modal>
+            <Controller
+              name="mobile"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="mobile">手机号码</FieldLabel>
+                  <Input
+                    {...field}
+                    id="mobile"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="请输入手机号码"
+                    maxLength={32}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Field orientation="horizontal" className="justify-between">
+                  <FieldLabel htmlFor="status">账号状态</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Switch id="status" checked={field.value} onCheckedChange={field.onChange} />
+                    <span className="text-sm text-muted-foreground">
+                      {field.value ? '启用' : '停用'}
+                    </span>
+                  </div>
+                </Field>
+              )}
+            />
+          </FieldGroup>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" type="button" onClick={onClose} disabled={submitting}>
+              取消
+            </Button>
+            <LoadingButton loading={submitting} type="submit">
+              {isEdit ? '保存' : '创建'}
+            </LoadingButton>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

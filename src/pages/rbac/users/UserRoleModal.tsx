@@ -1,16 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Modal, Select, Spin, Typography } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacRoleDTO, type RbacUserDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
-
-const { Text } = Typography;
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/LoadingButton';
+import { AppAlert } from '@/components/AppAlert';
+import { AppSpinner } from '@/components/AppSpinner';
+import { StatusBadge } from '@/components/StatusBadge';
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox';
 
 interface UserRoleModalProps {
   open: boolean;
   user: RbacUserDTO | null;
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface RoleOption {
+  label: string;
+  value: string;
+  disabled?: boolean;
 }
 
 export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClose, onSuccess }) => {
@@ -20,6 +47,8 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
   const [roles, setRoles] = useState<RbacRoleDTO[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
   const [modalError, setModalError] = useState<string | null>(null);
+
+  const anchorRef = useComboboxAnchor();
 
   // 打开目标变化时，在渲染期重置派生状态（React 官方「prop 变化时调整 state」模式），
   // 避免在 effect 同步主体里 setState 造成级联渲染
@@ -52,6 +81,21 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
         setLoading(false);
       });
   }, [openKey, user]);
+
+  const roleOptions: RoleOption[] = useMemo(
+    () =>
+      roles.map((role) => ({
+        label: `${role.roleName} (${role.roleCode})`,
+        value: role.id,
+        disabled: !role.status,
+      })),
+    [roles],
+  );
+
+  const selectedOptions: RoleOption[] = useMemo(
+    () => roleOptions.filter((opt) => selectedRoleIds.includes(opt.value)),
+    [roleOptions, selectedRoleIds],
+  );
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -88,59 +132,86 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
   };
 
   return (
-    <Modal
-      title={`分配角色 - ${user?.username || ''}`}
+    <Dialog
       open={open}
-      onCancel={onClose}
-      onOk={handleSubmit}
-      confirmLoading={submitting}
-      destroyOnHidden
-      okText="保存授权"
-      cancelText="取消"
-      width={560}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      {modalError && (
-        <Alert
-          title={modalError}
-          type="error"
-          showIcon
-          closable
-          onClose={() => setModalError(null)}
-          className="mb-4"
-        />
-      )}
+      <DialogContent className="sm:max-w-[560px]">
+        <DialogHeader>
+          <DialogTitle>分配角色 - {user?.username || ''}</DialogTitle>
+        </DialogHeader>
 
-      {loading ? (
-        <div className="py-10 text-center">
-          <Spin description="正在加载角色列表与当前授权..." />
-        </div>
-      ) : (
-        <div>
-          <div className="mb-3">
-            <Text type="secondary">
-              为用户 <Text strong>{user?.username}</Text> 分配所属角色。此操作为
-              <Text type="warning">全量覆盖</Text>，清空选择则表示移除该用户的全部角色。
-            </Text>
-          </div>
-
-          <Select
-            mode="multiple"
-            allowClear
-            className="w-full"
-            placeholder="请选择分配给该用户的角色"
-            value={selectedRoleIds}
-            onChange={(values) => setSelectedRoleIds(values)}
-            options={roles.map((role) => ({
-              label: `${role.roleName} (${role.roleCode})`,
-              value: role.id,
-              disabled: !role.status,
-            }))}
-            filterOption={(input, option) =>
-              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-            }
+        {modalError && (
+          <AppAlert
+            variant="error"
+            title={modalError}
+            closable
+            onClose={() => setModalError(null)}
+            className="mb-4"
           />
-        </div>
-      )}
-    </Modal>
+        )}
+
+        {loading ? (
+          <div className="py-10 text-center">
+            <AppSpinner description="正在加载角色列表与当前授权..." />
+          </div>
+        ) : (
+          <div>
+            <div className="mb-3 text-sm text-muted-foreground">
+              为用户 <span className="font-semibold text-foreground">{user?.username}</span>{' '}
+              分配所属角色。此操作为
+              <StatusBadge variant="warning" className="mx-1">
+                全量覆盖
+              </StatusBadge>
+              ，清空选择则表示移除该用户的全部角色。
+            </div>
+
+            <Combobox<RoleOption, true>
+              items={roleOptions}
+              multiple
+              value={selectedOptions}
+              onValueChange={(next: RoleOption[]) => {
+                setSelectedRoleIds(next.map((item) => item.value));
+              }}
+              isItemEqualToValue={(item, val) => item.value === val.value}
+            >
+              <ComboboxValue>
+                {(values: RoleOption[]) => (
+                  <ComboboxChips ref={anchorRef} className="w-full">
+                    {values.map((role) => (
+                      <ComboboxChip key={role.value}>{role.label}</ComboboxChip>
+                    ))}
+                    <ComboboxChipsInput
+                      placeholder={values.length > 0 ? '' : '请选择分配给该用户的角色'}
+                    />
+                  </ComboboxChips>
+                )}
+              </ComboboxValue>
+              <ComboboxContent anchor={anchorRef}>
+                <ComboboxEmpty>暂无匹配角色</ComboboxEmpty>
+                <ComboboxList>
+                  {(item: RoleOption) => (
+                    <ComboboxItem key={item.value} value={item} disabled={item.disabled}>
+                      {item.label}
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
+        )}
+
+        <DialogFooter className="mt-6">
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
+            取消
+          </Button>
+          <LoadingButton loading={submitting} onClick={handleSubmit}>
+            保存授权
+          </LoadingButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

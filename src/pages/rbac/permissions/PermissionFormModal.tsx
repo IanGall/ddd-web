@@ -1,7 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Form, Input, Modal, Select, Switch } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacPermissionDTO } from '@/api/rbac';
+import { ROOT_PARENT_ID } from './utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { ClearableSelect } from '@/components/ClearableSelect';
+import { LoadingButton } from '@/components/LoadingButton';
+import { AppAlert } from '@/components/AppAlert';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox';
 
 interface PermissionFormModalProps {
   open: boolean;
@@ -11,6 +36,31 @@ interface PermissionFormModalProps {
   onSuccess: () => void;
 }
 
+interface ParentOption {
+  label: string;
+  value: string;
+}
+
+const makePermissionSchema = (isEdit: boolean) =>
+  z.object({
+    permCode: z
+      .string()
+      .min(1, '请输入权限编码')
+      .max(64, '权限编码长度不能超过 64 个字符')
+      .regex(/^[A-Za-z0-9_:.-]{1,64}$/, '权限编码格式不正确')
+      .refine((val) => isEdit || !val.trim().startsWith('rbac:'), {
+        message: "自定义权限码不得以 'rbac:' 开头（系统保留前缀）",
+      }),
+    permName: z.string().min(1, '请输入权限名称').max(128, '权限名称长度不能超过 128 个字符'),
+    permType: z.number({ message: '请选择权限类型' }),
+    parentId: z.string().min(1, '请选择上级权限'),
+    path: z.string().max(255, '路径长度不能超过 255 个字符').optional(),
+    method: z.string().optional(),
+    status: z.boolean(),
+  });
+
+type PermissionFormValues = z.infer<ReturnType<typeof makePermissionSchema>>;
+
 export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
   open,
   permission,
@@ -18,7 +68,6 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -35,43 +84,71 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
     }
   }
 
+  const schema = useMemo(() => makePermissionSchema(isEdit), [isEdit]);
+
+  const { control, handleSubmit, reset } = useForm<PermissionFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      permCode: '',
+      permName: '',
+      permType: 2,
+      parentId: ROOT_PARENT_ID,
+      path: '',
+      method: undefined,
+      status: true,
+    },
+  });
+
   useEffect(() => {
     if (!openKey) return;
     if (permission) {
-      form.setFieldsValue({
+      reset({
         permCode: permission.permCode,
         permName: permission.permName,
         permType: permission.permType,
-        parentId: permission.parentId ?? 0,
+        parentId: permission.parentId ? String(permission.parentId) : ROOT_PARENT_ID,
         path: permission.path || '',
         method: permission.method || undefined,
         status: permission.status,
       });
     } else {
-      form.resetFields();
-      form.setFieldsValue({
-        permType: 2, // 缺省为 2=菜单
-        parentId: 0, // 契约要求：根节点必须传 0，不是 null
+      reset({
+        permCode: '',
+        permName: '',
+        permType: 2,
+        parentId: ROOT_PARENT_ID,
+        path: '',
+        method: undefined,
         status: true,
       });
     }
-  }, [openKey, permission, form]);
+  }, [openKey, permission, reset]);
 
-  const handleSubmit = async () => {
+  // 父级选项：排除当前正在编辑的节点自身，避免出现自循环
+  const parentOptions: ParentOption[] = useMemo(
+    () => [
+      { label: '根节点 (ID: 0)', value: ROOT_PARENT_ID },
+      ...allPermissions
+        .filter((p) => !isEdit || p.id !== permission?.id)
+        .map((p) => ({
+          label: `${p.permName} (${p.permCode}) [ID: ${p.id}]`,
+          value: String(p.id),
+        })),
+    ],
+    [allPermissions, isEdit, permission],
+  );
+
+  const onValid = async (values: PermissionFormValues) => {
     try {
-      const values = await form.validateFields();
       setSubmitting(true);
       setFormError(null);
-
-      const parentIdValue =
-        typeof values.parentId === 'number' && values.parentId >= 0 ? values.parentId : 0;
 
       if (isEdit && permission) {
         // 编辑权限：严禁发送 permCode 字段（契约规定 permCode 不可修改，编辑接口不接受）
         await rbacApi.updatePermission(permission.id, {
           permName: values.permName.trim(),
           permType: values.permType,
-          parentId: parentIdValue,
+          parentId: values.parentId,
           path: values.path ? values.path.trim() : undefined,
           method: values.method ? values.method : undefined,
           status: values.status,
@@ -82,7 +159,7 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
           permCode: values.permCode.trim(),
           permName: values.permName.trim(),
           permType: values.permType,
-          parentId: parentIdValue,
+          parentId: values.parentId,
           path: values.path ? values.path.trim() : undefined,
           method: values.method ? values.method : undefined,
           status: values.status,
@@ -97,7 +174,7 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
           return;
         }
         setFormError(err.info || '操作失败');
-      } else if (err instanceof Error && err.name !== 'ValidateError') {
+      } else if (err instanceof Error) {
         setFormError(err.message || '操作失败');
       }
     } finally {
@@ -105,150 +182,207 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
     }
   };
 
-  // 父级选项：排除当前正在编辑的节点自身，避免出现自循环
-  const parentOptions = [
-    { label: '根节点 (ID: 0)', value: 0 },
-    ...allPermissions
-      .filter((p) => !isEdit || p.id !== permission?.id)
-      .map((p) => ({
-        label: `${p.permName} (${p.permCode}) [ID: ${p.id}]`,
-        value: p.id,
-      })),
-  ];
-
   return (
-    <Modal
-      title={isEdit ? `编辑权限项 - ${permission?.permName}` : '新增权限项'}
+    <Dialog
       open={open}
-      onCancel={onClose}
-      onOk={handleSubmit}
-      confirmLoading={submitting}
-      destroyOnHidden
-      okText={isEdit ? '保存' : '创建'}
-      cancelText="取消"
-      width={600}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      {formError && (
-        <Alert
-          title={formError}
-          type="error"
-          showIcon
-          closable
-          onClose={() => setFormError(null)}
-          className="mb-4"
-        />
-      )}
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            {isEdit ? `编辑权限项 - ${permission?.permName}` : '新增权限项'}
+          </DialogTitle>
+        </DialogHeader>
 
-      <Form form={form} layout="vertical">
-        <Form.Item
-          label="权限编码 (permCode)"
-          name="permCode"
-          extra={
-            isEdit
-              ? '系统唯一标识，创建后不可修改'
-              : "自定义权限码禁止以 'rbac:' 开头（'rbac:' 为系统保留前缀）"
-          }
-          rules={[
-            { required: !isEdit, message: '请输入权限编码' },
-            { max: 64, message: '权限编码长度不能超过 64 个字符' },
-            {
-              validator: (_, value) => {
-                if (!isEdit && value) {
-                  if (value.trim().startsWith('rbac:')) {
-                    return Promise.reject(
-                      new Error("自定义权限码不得以 'rbac:' 开头（系统保留前缀）"),
-                    );
-                  }
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Input
-            placeholder="如 business:order:read, report:export"
-            disabled={isEdit}
-            maxLength={64}
+        {formError && (
+          <AppAlert
+            variant="error"
+            title={formError}
+            closable
+            onClose={() => setFormError(null)}
+            className="mb-4"
           />
-        </Form.Item>
+        )}
 
-        <Form.Item
-          label="权限名称"
-          name="permName"
-          rules={[
-            { required: true, message: '请输入权限名称' },
-            { max: 128, message: '权限名称长度不能超过 128 个字符' },
-          ]}
-        >
-          <Input placeholder="如 订单查看, 报表导出" maxLength={128} />
-        </Form.Item>
+        <form key={openKey ?? 'closed'} onSubmit={handleSubmit(onValid)}>
+          <FieldGroup>
+            <Controller
+              name="permCode"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="permCode">权限编码 (permCode)</FieldLabel>
+                  <Input
+                    {...field}
+                    id="permCode"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="如 business:order:read, report:export"
+                    disabled={isEdit}
+                    maxLength={64}
+                  />
+                  <FieldDescription>
+                    {isEdit
+                      ? '系统唯一标识，创建后不可修改'
+                      : "自定义权限码禁止以 'rbac:' 开头（'rbac:' 为系统保留前缀）"}
+                  </FieldDescription>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="权限类型"
-          name="permType"
-          rules={[{ required: true, message: '请选择权限类型' }]}
-        >
-          <Select
-            placeholder="选择权限类型"
-            options={[
-              { label: '目录 (Directory) - 1', value: 1 },
-              { label: '菜单 (Menu) - 2', value: 2 },
-              { label: '按钮 (Button) - 3', value: 3 },
-            ]}
-          />
-        </Form.Item>
+            <Controller
+              name="permName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="permName">权限名称</FieldLabel>
+                  <Input
+                    {...field}
+                    id="permName"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="如 订单查看, 报表导出"
+                    maxLength={128}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="父级节点 (parentId)"
-          name="parentId"
-          extra="根节点传 0，不能为负数"
-          rules={[
-            { required: true, message: '请选择或输入父级节点' },
-            {
-              validator: (_, value) => {
-                if (typeof value === 'number' && value < 0) {
-                  return Promise.reject(new Error('父级节点 ID 不能为负数'));
-                }
-                return Promise.resolve();
-              },
-            },
-          ]}
-        >
-          <Select
-            showSearch
-            placeholder="请选择父级节点（默认根节点 0）"
-            options={parentOptions}
-            filterOption={(input, option) =>
-              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-            }
-          />
-        </Form.Item>
+            <Controller
+              name="permType"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="permType">权限类型</FieldLabel>
+                  <ClearableSelect<number>
+                    id="permType"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="选择权限类型"
+                    allowClear={false}
+                    value={field.value}
+                    onChange={(val) => field.onChange(val ?? 2)}
+                    options={[
+                      { label: '目录 (Directory) - 1', value: 1 },
+                      { label: '菜单 (Menu) - 2', value: 2 },
+                      { label: '按钮 (Button) - 3', value: 3 },
+                    ]}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="路由路径 / API 路径 (path)"
-          name="path"
-          rules={[{ max: 255, message: '路径长度不能超过 255 个字符' }]}
-        >
-          <Input placeholder="前端路由路径或后端接口路径，如 /orders" maxLength={255} />
-        </Form.Item>
+            <Controller
+              name="parentId"
+              control={control}
+              render={({ field, fieldState }) => {
+                const selectedOption =
+                  parentOptions.find((opt) => opt.value === field.value) ?? null;
+                return (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="parentId">父级节点 (parentId)</FieldLabel>
+                    <Combobox<ParentOption>
+                      items={parentOptions}
+                      value={selectedOption}
+                      onValueChange={(next: ParentOption | null) => {
+                        field.onChange(next ? next.value : ROOT_PARENT_ID);
+                      }}
+                      isItemEqualToValue={(a, b) => a?.value === b?.value}
+                      itemToStringLabel={(item) => item?.label ?? ''}
+                    >
+                      <ComboboxInput
+                        id="parentId"
+                        aria-invalid={fieldState.invalid}
+                        placeholder="请选择父级节点（默认根节点 0）"
+                        className="w-full"
+                      />
+                      <ComboboxContent>
+                        <ComboboxEmpty>无匹配项</ComboboxEmpty>
+                        <ComboboxList>
+                          {(opt: ParentOption) => (
+                            <ComboboxItem key={opt.value} value={opt}>
+                              {opt.label}
+                            </ComboboxItem>
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                    <FieldDescription>根节点传 0，不能为负数</FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                );
+              }}
+            />
 
-        <Form.Item label="HTTP 方法 (method)" name="method">
-          <Select
-            allowClear
-            placeholder="接口请求方法"
-            options={[
-              { label: 'GET', value: 'GET' },
-              { label: 'POST', value: 'POST' },
-              { label: 'PUT', value: 'PUT' },
-              { label: 'DELETE', value: 'DELETE' },
-            ]}
-          />
-        </Form.Item>
+            <Controller
+              name="path"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="path">路由路径 / API 路径 (path)</FieldLabel>
+                  <Input
+                    {...field}
+                    id="path"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="前端路由路径或后端接口路径，如 /orders"
+                    maxLength={255}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item label="状态" name="status" valuePropName="checked">
-          <Switch checkedChildren="启用" unCheckedChildren="停用" />
-        </Form.Item>
-      </Form>
-    </Modal>
+            <Controller
+              name="method"
+              control={control}
+              render={({ field }) => (
+                <Field>
+                  <FieldLabel htmlFor="method">HTTP 方法 (method)</FieldLabel>
+                  <ClearableSelect<string>
+                    id="method"
+                    placeholder="接口请求方法"
+                    value={field.value ?? null}
+                    onChange={(val) => field.onChange(val ?? undefined)}
+                    options={[
+                      { label: 'GET', value: 'GET' },
+                      { label: 'POST', value: 'POST' },
+                      { label: 'PUT', value: 'PUT' },
+                      { label: 'DELETE', value: 'DELETE' },
+                    ]}
+                  />
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Field orientation="horizontal" className="justify-between">
+                  <FieldLabel htmlFor="status">状态</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Switch id="status" checked={field.value} onCheckedChange={field.onChange} />
+                    <span className="text-sm text-muted-foreground">
+                      {field.value ? '启用' : '停用'}
+                    </span>
+                  </div>
+                </Field>
+              )}
+            />
+          </FieldGroup>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" type="button" onClick={onClose} disabled={submitting}>
+              取消
+            </Button>
+            <LoadingButton loading={submitting} type="submit">
+              {isEdit ? '保存' : '创建'}
+            </LoadingButton>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
