@@ -1,10 +1,5 @@
 import type { RouteObject } from 'react-router-dom';
-import {
-  KeyOutlined,
-  SafetyCertificateOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+import { KeyRound, ShieldCheck, User, Users } from 'lucide-react';
 import { UserListPage } from '@/pages/rbac/users';
 import { RoleListPage } from '@/pages/rbac/roles';
 import { PermissionListPage } from '@/pages/rbac/permissions';
@@ -18,24 +13,24 @@ export const menuItems: DomainMenuItem[] = [
   {
     key: 'rbac-group',
     label: 'RBAC 权限管理',
-    icon: <SafetyCertificateOutlined />,
+    icon: <ShieldCheck />,
     children: [
       {
         key: '/rbac/users',
         label: '用户管理',
-        icon: <UserOutlined />,
+        icon: <User />,
         permission: 'rbac:user:read',
       },
       {
         key: '/rbac/roles',
         label: '角色管理',
-        icon: <TeamOutlined />,
+        icon: <Users />,
         permission: 'rbac:role:read',
       },
       {
         key: '/rbac/permissions',
         label: '权限项管理',
-        icon: <KeyOutlined />,
+        icon: <KeyRound />,
         permission: 'rbac:permission:read',
       },
     ],

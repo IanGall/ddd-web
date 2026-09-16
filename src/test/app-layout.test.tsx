@@ -10,6 +10,19 @@ vi.mock('@/api/auth', () => ({
   },
 }));
 
+vi.mock('@/pages/rbac/users', () => ({
+  UserListPage: () => null,
+}));
+vi.mock('@/pages/rbac/roles', () => ({
+  RoleListPage: () => null,
+}));
+vi.mock('@/pages/rbac/permissions', () => ({
+  PermissionListPage: () => null,
+}));
+vi.mock('@/pages/channel/ChannelCredentials', () => ({
+  ChannelCredentialsPage: () => null,
+}));
+
 const allPermissions = [
   'rbac:user:read',
   'rbac:role:read',

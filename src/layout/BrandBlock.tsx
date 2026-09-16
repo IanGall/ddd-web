@@ -1,29 +1,17 @@
 import React from 'react';
-import { theme } from 'antd';
-import { CodeSandboxOutlined } from '@ant-design/icons';
+import { Boxes } from 'lucide-react';
 
 export const BrandBlock: React.FC = () => {
-  const { token } = theme.useToken();
-
   return (
-    <div
-      className="flex h-16 items-center gap-3 border-b px-5"
-      style={{ borderColor: token.colorSplit }}
-    >
-      <div
-        className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
-        style={{ backgroundColor: token.colorPrimary }}
-      >
-        <CodeSandboxOutlined style={{ color: token.colorTextLightSolid, fontSize: 18 }} />
+    <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-sidebar-primary text-sidebar-primary-foreground">
+        <Boxes className="size-5" />
       </div>
       <div className="flex min-w-0 flex-col">
-        <span className="text-sm leading-tight font-bold" style={{ color: token.colorText }}>
+        <span className="text-sm leading-tight font-bold text-sidebar-foreground">
           Admin Console
         </span>
-        <span
-          className="text-[10px] leading-tight tracking-widest uppercase"
-          style={{ color: token.colorTextTertiary }}
-        >
+        <span className="text-[10px] leading-tight tracking-widest text-muted-foreground uppercase">
           DDD PLATFORM
         </span>
       </div>

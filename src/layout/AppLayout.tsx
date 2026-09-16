@@ -1,15 +1,12 @@
-import React, { useMemo, useState } from 'react';
-import { Layout } from 'antd';
-import { DashboardOutlined, DesktopOutlined } from '@ant-design/icons';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { LayoutDashboard, Monitor } from 'lucide-react';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { usePermission } from '@/hooks/usePermission';
 import type { DomainMenuItem } from '@/layout/menuFilter';
 import { collectGroupKeys, filterMenuItems } from '@/layout/menuFilter';
-import { toAntdItems } from '@/layout/toAntdItems';
-import { SideNav } from '@/layout/SideNav';
+import { AppSidebar } from '@/layout/AppSidebar';
 import { HeaderBar } from '@/layout/HeaderBar';
-
-const { Content } = Layout;
 
 interface DomainModule {
   menuItems?: DomainMenuItem[];
@@ -38,13 +35,13 @@ export const AppLayout: React.FC = () => {
       {
         key: '/dashboard',
         label: '控制台概览',
-        icon: <DashboardOutlined />,
+        icon: <LayoutDashboard />,
       },
       ...domainMenuItems,
       {
         key: '/sessions',
         label: '我的会话',
-        icon: <DesktopOutlined />,
+        icon: <Monitor />,
       },
     ];
   }, []);
@@ -57,23 +54,33 @@ export const AppLayout: React.FC = () => {
     [allMenuItems, keyword, hasPermission],
   );
 
-  const antdItems = useMemo(() => toAntdItems(filteredItems), [filteredItems]);
+  const effectiveOpenKeys = useMemo(
+    () => (keyword.trim() !== '' ? collectGroupKeys(filteredItems) : openKeys),
+    [keyword, filteredItems, openKeys],
+  );
+
+  const handleOpenKeysChange = useCallback(
+    (keys: string[]) => {
+      if (keyword.trim() === '') {
+        setOpenKeys(keys);
+      }
+    },
+    [keyword],
+  );
 
   return (
-    <Layout className="min-h-screen">
-      <SideNav
-        items={antdItems}
-        filteredItems={filteredItems}
-        keyword={keyword}
-        openKeys={openKeys}
-        onOpenKeysChange={setOpenKeys}
+    <SidebarProvider defaultOpen>
+      <AppSidebar
+        items={filteredItems}
+        openKeys={effectiveOpenKeys}
+        onOpenKeysChange={handleOpenKeysChange}
       />
-      <Layout>
+      <SidebarInset>
         <HeaderBar keyword={keyword} onKeywordChange={setKeyword} />
-        <Content className="p-6">
+        <main className="p-6">
           <Outlet />
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
