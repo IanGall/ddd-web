@@ -45,9 +45,9 @@ report_violation "@radix-ui 引用（本仓使用 Base UI）" "$check_radix"
 check_hex_color=$(find src -type f ! -path 'src/lib/palette.ts' ! -path 'src/test/*' -exec grep -HnE '#[0-9a-fA-F]{3,8}' {} + 2>/dev/null || true)
 report_violation "十六进制颜色字面量（仅允许 src/lib/palette.ts 与 src/test/）" "$check_hex_color"
 
-# 7. use-mobile.ts 必须包含 useSyncExternalStore（防 shadcn add --overwrite 回退）
+# 7. use-mobile.ts 必须包含 useSyncExternalStore 真实调用（防 shadcn add --overwrite 回退）
 check_use_mobile=""
-if ! grep -q 'useSyncExternalStore' src/hooks/use-mobile.ts 2>/dev/null; then
+if ! grep -F -q 'return React.useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);' src/hooks/use-mobile.ts 2>/dev/null; then
   check_use_mobile="src/hooks/use-mobile.ts 缺失 useSyncExternalStore。这处补丁若被 shadcn add --overwrite 回退，会导致 pnpm lint 的 react-hooks/set-state-in-effect 报错，而该报错信息不指向真正原因"
 fi
 report_violation "use-mobile.ts 必须包含 useSyncExternalStore" "$check_use_mobile"
