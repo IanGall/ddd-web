@@ -1,15 +1,7 @@
-import type { ReactNode } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { AppstoreOutlined, LockOutlined } from '@ant-design/icons';
 import { ChannelCredentialsPage } from '@/pages/channel/ChannelCredentials';
-
-export interface DomainMenuItem {
-  key: string; // 路由绝对路径，如 '/platform/channel-credentials'
-  label: string;
-  icon?: ReactNode;
-  permission?: string; // 权限码；缺省表示无需权限
-  children?: DomainMenuItem[];
-}
+import type { DomainMenuItem } from '@/layout/menuFilter';
 
 export const menuItems: DomainMenuItem[] = [
   {

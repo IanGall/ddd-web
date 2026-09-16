@@ -1,5 +1,4 @@
 import type { RouteObject } from 'react-router-dom';
-import type { ReactNode } from 'react';
 import {
   KeyOutlined,
   SafetyCertificateOutlined,
@@ -9,17 +8,7 @@ import {
 import { UserListPage } from '@/pages/rbac/users';
 import { RoleListPage } from '@/pages/rbac/roles';
 import { PermissionListPage } from '@/pages/rbac/permissions';
-
-/**
- * 域模块导出的菜单项契约
- */
-export interface DomainMenuItem {
-  key: string; // 路由绝对路径或分组唯一标识
-  label: string;
-  icon?: ReactNode;
-  permission?: string; // 权限码；缺省表示无需权限
-  children?: DomainMenuItem[];
-}
+import type { DomainMenuItem } from '@/layout/menuFilter';
 
 /**
  * RBAC 域菜单定义

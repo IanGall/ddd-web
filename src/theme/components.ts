@@ -16,7 +16,6 @@ export const SIDE_MENU_TOKENS = {
 
 export const components: ThemeConfig['components'] = {
   Layout: {
-    siderBg: '#FFFFFF',
     lightSiderBg: '#FFFFFF',
     headerBg: '#FFFFFF',
     headerHeight: 64,
