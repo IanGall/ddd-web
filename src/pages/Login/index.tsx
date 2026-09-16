@@ -63,7 +63,7 @@ export const LoginPage: React.FC = () => {
       className="flex min-h-screen items-center justify-center"
       style={{ background: token.colorBgLayout }}
     >
-      <Card className="w-[400px] rounded-xl">
+      <Card className="w-[400px]">
         <div className="mb-6 text-center">
           <Title level={3} className="mb-2">
             管理端控制台

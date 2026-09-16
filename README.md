@@ -2,7 +2,7 @@
 
 ## 1. 仓定位
 
-`ddd-web` 是基于 React + TypeScript + Vite + Ant Design (v5) 构建的独立管理端单页应用（SPA）。
+`ddd-web` 是基于 React + TypeScript + Vite + Ant Design (v6) 构建的独立管理端单页应用（SPA）。
 
 作为 `ian-ddd-gateway` 网关管理端接口（`/api/admin/**`）的权威第一方消费者，本仓负责管理端认证与登录、有效权限引导、RBAC 用户/角色/权限管理、渠道凭证管理以及我的会话管理等能力的前端呈现。
 
@@ -99,9 +99,31 @@ bash deploy/deploy-local.sh
 4. **红线 4**：响应式前缀只用一套（Tailwind 断点已在 `src/index.css` 的 `@theme` 中对齐 antd 媒体查询：576px / 768px / 992px / 1200px / 1600px，禁止改回默认值；antd 的 `xs` 为 `max-width: 575px`，在 Tailwind 里由无前缀的基准样式表达，因此不引入 `--breakpoint-xs`）。
 5. **红线 5**：业务代码与测试不出现 `.ant-*` 选择器（严禁强行覆写 antd 组件内部结构）。
 
+### 例外与判据修正
+
+**例外 1（数据强调色板）**：`src/theme/palette.ts` 是仓内唯一允许出现颜色字面量的文件，定义四色数据强调色（橙 `#F0562B`、青 `#14A79D`、藏蓝 `#17324F`、琥珀 `#F5B21A`）及由它派生的 `hexToRgba()` 辅助函数。页面与组件只能按语义名引用（`DATA_PALETTE.orange` / `accent="orange"`），不得写字面量；颜色最终只能经 antd prop 的样式对象落地。
+
+**例外 2（antd 组件上的 Tailwind 几何类）**：允许把 Tailwind **几何**工具类（`rounded-full`/`gap-*`/`px-*`/`size-*`）打在 antd 组件上，用于补齐 antd 缺失的 token（如 `Button` 与 `Input` 都没有 `borderRadius` token，pill 形态只能写 `className="rounded-full"`）。**颜色类仍被禁止。**
+
+**例外 3（Menu `label` 传 ReactNode）**：允许给 `Menu` 的 `label` 传 ReactNode 以表达 antd 无 token 可表达的全大写与字间距（见 `src/layout/MenuGroupLabel.tsx`）；禁止借此传入颜色类。
+
+**红线 1 判据修正**：`grep -rnE '(bg|text|border)-\[#' src | grep -v 'src/theme/palette.ts'` 必须为 0。
+
+**红线 3 补充**：Tailwind 的 `@theme` 中不得新增 `--color-*`，避免出现第二条颜色来源。
+
+### 主题层落点
+
+- **唯一主题源**：`src/theme/`（`tokens.ts` 全局 token、`components.ts` 组件级 token、`palette.ts` 数据强调色板、`index.ts` 组装 `themeConfig`）。`src/App.tsx` 只做 `theme={themeConfig}` 的装配。**换肤/调色只改这一个目录。**
+- **主色语义**：`colorPrimary` 是近黑（主行动色，驱动主按钮与选中态）；橙色等四色是**数据强调色**，只用于数据可视化表达，两者不是一回事。
+- **侧栏菜单的激进 token 必须用嵌套 `ConfigProvider` 局部生效**：`SIDE_MENU_TOKENS`（`itemHeight`/`itemSelectedBg`/`itemBorderRadius` 等）是全局 token，若直接放进 `src/theme/components.ts` 会连带改掉所有 `Dropdown` 的下拉菜单。见 `src/layout/SideNav.tsx`。
+- **侧栏分组必须用 submenu，不能用 `type:'group'`**：antd 6 的 group 标题**不可折叠**，且 group 的 `key` 不参与 `selectedKeys`/`openKeys`、group 标题也没有 `icon` 字段。因此 `Menu.groupTitle*` 这三个 token 在本仓是**无效配置**（它们只作用于 `.ant-menu-item-group-title`），分组标题的样式改由 `MenuGroupLabel` 承担。
+- **`Sider` 必须显式写 `theme="light"`**：antd 的 `Sider` 默认 theme 是 `dark`，靠 `lightSiderBg` token 驱动底色；不要依赖 `siderBg`。
+- **`index.css` 的 `base` 层不再设 `body` 背景色**：它由 antd 的 `bodyBg` token 驱动，避免出现第二份颜色真相（代价是首屏可能有一帧白闪）。
+- **菜单过滤的两层叠加**：权限过滤与关键字过滤必须在**同一趟递归**里判定（`src/layout/menuFilter.ts` 的 `filterMenuItems`），否则会出现「命中但无权」的越权泄露或空分组。
+
 ### 基础设施约定
 
 - **全局样式入口与 Layer 声明**：`src/index.css` 开头的 `@layer theme, base, antd, components, utilities;` 是与 antd 样式共存的前提，用于确保 Tailwind utilities 优先级高于 antd 且 base 样式不破坏组件样式，**禁止删改**；**禁止**出现裸 `@import 'tailwindcss'`。
 - **antd 样式降权**：antd 样式通过 `src/App.tsx` 中的 `<StyleProvider layer>` 放入 `@layer antd` 降权，`StyleProvider` 必须包裹在 `ConfigProvider` 外层（图标样式依赖）。
-- **Tailwind 使用边界**：Tailwind 工具类仅用于自定义容器与非 antd 裸元素的布局与间距，**禁止**用它覆盖 antd 组件内部样式（如 Button 背景、Input 边框、Table 单元格、Menu 等）。
-- **人工核对要求**：样式回归无法用 jsdom 测试发现，必须在真实浏览器核对。
+- **Tailwind 使用边界**：Tailwind 工具类用于自定义容器与非 antd 裸元素的布局与间距；在 antd 组件上，**只允许**打几何类（依「例外 2」），**禁止**用 Tailwind 覆盖 antd 组件的**颜色与外观语义**（背景、边框色、Table 单元格、Menu 项样式等）——这些必须走 antd token；「例外 2」优先于本条。
+- **人工核对要求**：样式回归无法用 jsdom 测试发现，必须在真实浏览器核对。`vitest` 的配置**独立于** `vite.config.ts`，不挂 `@tailwindcss/vite` 插件、也不套 `ConfigProvider`，所以**测试里 Tailwind 与主题都不生效**——测试只能守住行为与文案，样式必须真机核对。
