@@ -8,4 +8,4 @@ export const themeConfig: ThemeConfig = {
 };
 
 export { SIDE_MENU_TOKENS } from './components';
-export { DATA_PALETTE, type DataAccent } from './palette';
+export { DATA_PALETTE, hexToRgba, type DataAccent } from './palette';

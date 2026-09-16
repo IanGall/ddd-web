@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Col, Row, Space, Statistic, Tag, Tooltip, Typography, theme } from 'antd';
+import { Button, Card, Col, Row, Space, Tag, Typography } from 'antd';
 import {
   ApiOutlined,
   DashboardOutlined,
@@ -16,11 +16,11 @@ import { authApi } from '@/api/auth';
 import { channelApi } from '@/api/channel';
 import { request } from '@/api/client';
 import { ApiError, type PageResponse } from '@/api/types';
+import { StatCard } from '@/components/StatCard';
 
 const { Title, Text, Paragraph } = Typography;
 
 export const DashboardPage: React.FC = () => {
-  const { token } = theme.useToken();
   const navigate = useNavigate();
   const username = useAuthStore((state) => state.username);
   const userType = useAuthStore((state) => state.userType);
@@ -167,85 +167,51 @@ export const DashboardPage: React.FC = () => {
       {/* 四个 total 业务实体统计卡片 */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={6}>
-          <Card size="small">
-            <Tooltip title={usersStat.tip}>
-              <div>
-                <Statistic
-                  title="用户总数"
-                  value={usersStat.value}
-                  prefix={<UserOutlined className="mr-1" />}
-                  styles={{
-                    content: usersStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
-                  }}
-                />
-                <Text type="secondary" className="text-xs">
-                  {canReadUsers ? '系统用户实体规模' : '无读取权限'}
-                </Text>
-              </div>
-            </Tooltip>
-          </Card>
+          <StatCard
+            title="用户总数"
+            value={usersStat.value}
+            hint={canReadUsers ? '系统用户实体规模' : '无读取权限'}
+            icon={<UserOutlined />}
+            accent="orange"
+            dimmed={usersStat.isDimmed}
+            tip={usersStat.tip}
+          />
         </Col>
 
         <Col xs={24} sm={12} md={6}>
-          <Card size="small">
-            <Tooltip title={rolesStat.tip}>
-              <div>
-                <Statistic
-                  title="角色总数"
-                  value={rolesStat.value}
-                  prefix={<TeamOutlined className="mr-1" />}
-                  styles={{
-                    content: rolesStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
-                  }}
-                />
-                <Text type="secondary" className="text-xs">
-                  {canReadRoles ? '安全权限角色定义' : '无读取权限'}
-                </Text>
-              </div>
-            </Tooltip>
-          </Card>
+          <StatCard
+            title="角色总数"
+            value={rolesStat.value}
+            hint={canReadRoles ? '安全权限角色定义' : '无读取权限'}
+            icon={<TeamOutlined />}
+            accent="teal"
+            dimmed={rolesStat.isDimmed}
+            tip={rolesStat.tip}
+          />
         </Col>
 
         <Col xs={24} sm={12} md={6}>
-          <Card size="small">
-            <Tooltip title={permissionsStat.tip}>
-              <div>
-                <Statistic
-                  title="权限项总数"
-                  value={permissionsStat.value}
-                  prefix={<KeyOutlined className="mr-1" />}
-                  styles={{
-                    content: permissionsStat.isDimmed
-                      ? { color: token.colorTextTertiary }
-                      : undefined,
-                  }}
-                />
-                <Text type="secondary" className="text-xs">
-                  {canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
-                </Text>
-              </div>
-            </Tooltip>
-          </Card>
+          <StatCard
+            title="权限项总数"
+            value={permissionsStat.value}
+            hint={canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
+            icon={<KeyOutlined />}
+            accent="navy"
+            dimmed={permissionsStat.isDimmed}
+            tip={permissionsStat.tip}
+          />
         </Col>
 
         <Col xs={24} sm={12} md={6}>
-          <Card size="small">
-            <Tooltip title={channelsStat.tip}>
-              <div>
-                <Statistic
-                  title="渠道凭证总数"
-                  value={channelsStat.value}
-                  prefix={<ApiOutlined className="mr-1" />}
-                  styles={{
-                    content: channelsStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
-                  }}
-                />
-                <Text type="secondary" className="text-xs">
-                  {canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
-                </Text>
-              </div>
-            </Tooltip>
-          </Card>
+          <StatCard
+            title="渠道凭证总数"
+            value={channelsStat.value}
+            hint={canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
+            icon={<ApiOutlined />}
+            accent="amber"
+            dimmed={channelsStat.isDimmed}
+            tip={channelsStat.tip}
+          />
         </Col>
       </Row>
 
