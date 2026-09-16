@@ -1,15 +1,7 @@
 import React from 'react';
-import { Button, Card, Col, Row, Space, Tag, Typography } from 'antd';
-import {
-  ApiOutlined,
-  DashboardOutlined,
-  DesktopOutlined,
-  KeyOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { KeyRound, LayoutDashboard, Monitor, Plug, User, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { usePermission } from '@/hooks/usePermission';
 import { authApi } from '@/api/auth';
@@ -17,8 +9,9 @@ import { channelApi } from '@/api/channel';
 import { request } from '@/api/client';
 import { ApiError, type PageResponse } from '@/api/types';
 import { StatCard } from '@/components/StatCard';
-
-const { Title, Text, Paragraph } = Typography;
+import { StatusBadge } from '@/components/StatusBadge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -146,141 +139,141 @@ export const DashboardPage: React.FC = () => {
     <div className="flex flex-col gap-4">
       {/* 顶部欢迎卡片 */}
       <Card>
-        <Title level={4} className="mt-0">
-          欢迎，{username || '管理员'}！
-        </Title>
-        <Paragraph type="secondary">
-          欢迎使用 DDD 平台管理控制台，当前登录会话令牌严格存储于内存中，保障操作安全与鉴权隔离。
-        </Paragraph>
-        <Space orientation="horizontal" wrap>
-          <Tag color={userType === 'ADMIN_PRIMARY' ? 'gold' : 'blue'}>
-            {userType === 'ADMIN_PRIMARY'
-              ? '主管理员 (ADMIN_PRIMARY)'
-              : '子账号 (ADMIN_SUB_ACCOUNT)'}
-          </Tag>
-          <Tag>账号 ID: {accountId ?? '-'}</Tag>
-          <Tag>用户 ID: {userId ?? '-'}</Tag>
-          <Tag color="cyan">当前有效权限项: {permissionCodes.length} 项</Tag>
-        </Space>
+        <CardHeader>
+          <CardTitle className="text-xl">{`欢迎，${username || '管理员'}！`}</CardTitle>
+          <CardDescription>
+            欢迎使用 DDD 平台管理控制台，当前登录会话令牌严格存储于内存中，保障操作安全与鉴权隔离。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge variant={userType === 'ADMIN_PRIMARY' ? 'warning' : 'info'}>
+              {userType === 'ADMIN_PRIMARY'
+                ? '主管理员 (ADMIN_PRIMARY)'
+                : '子账号 (ADMIN_SUB_ACCOUNT)'}
+            </StatusBadge>
+            <StatusBadge variant="muted">{`账号 ID: ${accountId ?? '-'}`}</StatusBadge>
+            <StatusBadge variant="muted">{`用户 ID: ${userId ?? '-'}`}</StatusBadge>
+            <StatusBadge variant="cyan">{`当前有效权限项: ${permissionCodes.length} 项`}</StatusBadge>
+          </div>
+        </CardContent>
       </Card>
 
       {/* 四个 total 业务实体统计卡片 */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={6}>
-          <StatCard
-            title="用户总数"
-            value={usersStat.value}
-            hint={canReadUsers ? '系统用户实体规模' : '无读取权限'}
-            icon={<UserOutlined />}
-            accent="orange"
-            dimmed={usersStat.isDimmed}
-            tip={usersStat.tip}
-          />
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <StatCard
-            title="角色总数"
-            value={rolesStat.value}
-            hint={canReadRoles ? '安全权限角色定义' : '无读取权限'}
-            icon={<TeamOutlined />}
-            accent="teal"
-            dimmed={rolesStat.isDimmed}
-            tip={rolesStat.tip}
-          />
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <StatCard
-            title="权限项总数"
-            value={permissionsStat.value}
-            hint={canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
-            icon={<KeyOutlined />}
-            accent="navy"
-            dimmed={permissionsStat.isDimmed}
-            tip={permissionsStat.tip}
-          />
-        </Col>
-
-        <Col xs={24} sm={12} md={6}>
-          <StatCard
-            title="渠道凭证总数"
-            value={channelsStat.value}
-            hint={canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
-            icon={<ApiOutlined />}
-            accent="amber"
-            dimmed={channelsStat.isDimmed}
-            tip={channelsStat.tip}
-          />
-        </Col>
-      </Row>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <StatCard
+          title="用户总数"
+          value={usersStat.value}
+          hint={canReadUsers ? '系统用户实体规模' : '无读取权限'}
+          icon={<User className="size-5" />}
+          accent="orange"
+          dimmed={usersStat.isDimmed}
+          tip={usersStat.tip}
+        />
+        <StatCard
+          title="角色总数"
+          value={rolesStat.value}
+          hint={canReadRoles ? '安全权限角色定义' : '无读取权限'}
+          icon={<Users className="size-5" />}
+          accent="teal"
+          dimmed={rolesStat.isDimmed}
+          tip={rolesStat.tip}
+        />
+        <StatCard
+          title="权限项总数"
+          value={permissionsStat.value}
+          hint={canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
+          icon={<KeyRound className="size-5" />}
+          accent="navy"
+          dimmed={permissionsStat.isDimmed}
+          tip={permissionsStat.tip}
+        />
+        <StatCard
+          title="渠道凭证总数"
+          value={channelsStat.value}
+          hint={canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
+          icon={<Plug className="size-5" />}
+          accent="amber"
+          dimmed={channelsStat.isDimmed}
+          tip={channelsStat.tip}
+        />
+      </div>
 
       {/* 概览快捷卡片 */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={8}>
-          <Card title="网关服务状态" size="small">
-            <p className="mt-4 mb-4">
-              <strong>应用名称:</strong>{' '}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>网关服务状态</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>
+              <strong className="font-semibold">应用名称:</strong>{' '}
               {gatewayQuery.data?.application ||
                 (gatewayQuery.isLoading ? '加载中...' : 'ian-ddd-gateway')}
             </p>
-            <p className="mb-0">
-              <strong>运行状态:</strong>{' '}
-              <Tag
-                color={
+            <div className="flex items-center gap-2">
+              <strong className="font-semibold">运行状态:</strong>
+              <StatusBadge
+                variant={
                   gatewayQuery.data?.status === 'UP' || gatewayQuery.data?.status === 'RUNNING'
                     ? 'success'
                     : gatewayQuery.isError
-                      ? 'error'
+                      ? 'destructive'
                       : 'processing'
                 }
               >
                 {gatewayQuery.data?.status || (gatewayQuery.isError ? '不可用' : '在线')}
-              </Tag>
-            </p>
-          </Card>
-        </Col>
+              </StatusBadge>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Col xs={24} sm={12} md={8}>
-          <Card title="会话管理概况" size="small">
-            <p className="mt-4 mb-4">
-              <strong>当前活跃会话数:</strong>{' '}
-              <Text strong className="text-base">
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>会话管理概况</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>
+              <strong className="font-semibold">当前活跃会话数:</strong>{' '}
+              <span className="text-base font-bold">
                 {sessionsQuery.isError
                   ? '-'
                   : (sessionsQuery.data?.length ?? (sessionsQuery.isLoading ? '...' : 0))}
-              </Text>
+              </span>
             </p>
-            <Button
-              type="link"
-              icon={<DesktopOutlined />}
-              className="pl-0"
-              onClick={() => navigate('/sessions')}
-            >
-              前往「我的会话」管理终端 →
-            </Button>
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} md={8}>
-          <Card title="快捷导航" size="small">
-            <Space orientation="vertical" size="small" className="w-full">
+            <div>
               <Button
-                type="link"
-                icon={<DashboardOutlined />}
-                className="pl-0"
-                disabled={!canReadChannels}
-                onClick={() => navigate('/platform/channel-credentials')}
+                variant="link"
+                className="h-auto p-0 text-primary"
+                onClick={() => navigate('/sessions')}
               >
-                前往「渠道凭证管理」{canReadChannels ? '→' : '（无权限）'}
+                <Monitor className="size-4" />
+                前往「我的会话」管理终端 →
               </Button>
-              <Text type="secondary" className="text-xs">
-                根据登录主体分配的权限动态提供可访问业务模块
-              </Text>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>快捷导航</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-start gap-2">
+            <Button
+              variant="link"
+              className="h-auto p-0 text-primary"
+              disabled={!canReadChannels}
+              onClick={() => navigate('/platform/channel-credentials')}
+            >
+              <LayoutDashboard className="size-4" />
+              前往「渠道凭证管理」{canReadChannels ? '→' : '（无权限）'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              根据登录主体分配的权限动态提供可访问业务模块
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

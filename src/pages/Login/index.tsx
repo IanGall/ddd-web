@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
-import { Alert, Button, Card, Form, Input, Typography, theme } from 'antd';
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Field, FieldError, FieldGroup } from '@/components/ui/field';
+import { AppAlert } from '@/components/AppAlert';
 import { authApi } from '@/api/auth';
 import { useAuthStore } from '@/store/auth';
 import { ApiError } from '@/api/types';
 
-const { Title, Text } = Typography;
+const loginSchema = z.object({
+  loginName: z.string().min(1, '请输入管理员账号'),
+  password: z
+    .string()
+    .min(1, '请输入密码')
+    .refine((val) => val.length === 0 || (val.length >= 8 && val.length <= 72), {
+      message: '密码长度为 8~72 位',
+    }),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const LoginPage: React.FC = () => {
-  const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -22,7 +38,15 @@ export const LoginPage: React.FC = () => {
   const fromPath =
     (location.state as { from?: { pathname?: string } })?.from?.pathname || '/dashboard';
 
-  const onFinish = async (values: { loginName: string; password: string }) => {
+  const { control, handleSubmit } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      loginName: '',
+      password: '',
+    },
+  });
+
+  const onFinish = async (values: LoginFormValues) => {
     setLoading(true);
     setErrorMessage(null);
     try {
@@ -59,64 +83,66 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ background: token.colorBgLayout }}
-    >
-      <Card className="w-[400px]">
-        <div className="mb-6 text-center">
-          <Title level={3} className="mb-2">
-            管理端控制台
-          </Title>
-          <Text type="secondary">领域驱动架构基础认证体系</Text>
-        </div>
-
-        {errorMessage && (
-          <Alert
-            title={errorMessage}
-            type="error"
-            showIcon
-            closable
-            onClose={() => setErrorMessage(null)}
-            className="mb-5"
-          />
-        )}
-
-        <Form
-          name="admin_login"
-          initialValues={{ loginName: '', password: '' }}
-          onFinish={onFinish}
-          layout="vertical"
-          size="large"
-        >
-          <Form.Item name="loginName" rules={[{ required: true, message: '请输入管理员账号' }]}>
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="管理员账号 / 登录名"
-              autoComplete="username"
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-[400px]">
+        <CardHeader className="text-center">
+          <CardTitle className="text-xl">管理端控制台</CardTitle>
+          <CardDescription>领域驱动架构基础认证体系</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {errorMessage && (
+            <AppAlert
+              variant="error"
+              description={errorMessage}
+              closable
+              onClose={() => setErrorMessage(null)}
+              className="mb-5"
             />
-          </Form.Item>
+          )}
 
-          <Form.Item
-            name="password"
-            rules={[
-              { required: true, message: '请输入密码' },
-              { min: 8, max: 72, message: '密码长度为 8~72 位' },
-            ]}
-          >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="密码"
-              autoComplete="current-password"
-            />
-          </Form.Item>
+          <form onSubmit={handleSubmit(onFinish)}>
+            <FieldGroup>
+              <Controller
+                name="loginName"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <Input
+                      {...field}
+                      id="loginName"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="管理员账号 / 登录名"
+                      autoComplete="username"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
 
-          <Form.Item className="mb-0">
-            <Button type="primary" htmlType="submit" block loading={loading}>
-              登 录
-            </Button>
-          </Form.Item>
-        </Form>
+              <Controller
+                name="password"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <Input
+                      {...field}
+                      id="password"
+                      type="password"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="密码"
+                      autoComplete="current-password"
+                    />
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Loader2 className="size-4 animate-spin" />}登 录
+              </Button>
+            </FieldGroup>
+          </form>
+        </CardContent>
       </Card>
     </div>
   );

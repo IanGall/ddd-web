@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>管理端系统</title>
+    <!--
+      防闪烁内联脚本：在首帧渲染前同步设置 <html> 的 class 与 colorScheme。
+      注意：此脚本无法 import，localStorage 键名 'ddd-web-theme' 必须与 src/lib/theme.ts 的 THEME_STORAGE_KEY 保持同步。
+    -->
+    <script>
+      (function () {
+        try {
+          var storageKey = 'ddd-web-theme';
+          var theme = localStorage.getItem(storageKey);
+          var isDark =
+            theme === 'dark' ||
+            (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var mode = isDark ? 'dark' : 'light';
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(mode);
+          root.style.colorScheme = mode;
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

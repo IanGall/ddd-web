@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, type MockInstance } from 'vitest';
 import axios, { AxiosHeaders, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import { message } from 'antd';
+import * as toastModule from '@/lib/toast';
 import { apiClient, refreshClient, setRedirectHandler, request } from '@/api/client';
 import { useAuthStore } from '@/store/auth';
 import { ApiError, ResponseCode } from '@/api/types';
@@ -324,9 +324,7 @@ describe('A4 错误码语义分流与前端行为断言', () => {
     setRedirectHandler((path) => {
       redirectedPath = path;
     });
-    messageErrorSpy = vi
-      .spyOn(message, 'error')
-      .mockImplementation(() => (() => {}) as unknown as ReturnType<typeof message.error>);
+    messageErrorSpy = vi.spyOn(toastModule, 'notifyError').mockImplementation(() => {});
     useAuthStore.getState().clear();
   });
 

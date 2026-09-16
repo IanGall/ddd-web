@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Divider,
-  Form,
-  message,
-  Modal,
-  Select,
-  Space,
-  Spin,
-  Typography,
-} from 'antd';
 import { channelApi, type ChannelCredentialDTO } from '@/api/channel';
 import { usePermission } from '@/hooks/usePermission';
 import { ApiError, ResponseCode } from '@/api/types';
-
-const { Text } = Typography;
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/LoadingButton';
+import { ClearableSelect } from '@/components/ClearableSelect';
+import { TagInput } from '@/components/TagInput';
+import { AppAlert } from '@/components/AppAlert';
+import { AppSpinner } from '@/components/AppSpinner';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { notifySuccess } from '@/lib/toast';
 
 export interface DataScopeModalProps {
   open: boolean;
@@ -122,7 +123,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
       await channelApi.replaceDataScopes(credential.id, scopeType.trim(), {
         scopeValues: cleanValues,
       });
-      message.success(`数据范围 [${scopeType}] 替换保存成功`);
+      notifySuccess(`数据范围 [${scopeType}] 替换保存成功`);
     } catch (err) {
       if (err instanceof ApiError && err.code === ResponseCode.INVALID_ARGUMENT) {
         setErrorMessage(err.info || '参数不合法，保存失败');
@@ -135,91 +136,106 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
   };
 
   return (
-    <Modal
-      title={
-        <span>
-          配置数据范围 — {credential?.channelName} ({credential?.channelCode})
-        </span>
-      }
+    <Dialog
       open={open}
-      onCancel={onClose}
-      width={640}
-      footer={[
-        <Button key="close" onClick={onClose}>
-          关闭
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={saving}
-          disabled={!canUpdate}
-          onClick={handleSave}
-          title={!canUpdate ? '暂无修改权限 (需 rbac:channel-credential:update)' : undefined}
-        >
-          保存此类型数据范围
-        </Button>,
-      ]}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div className="mt-3 flex flex-col gap-4">
-        <Alert
-          type="info"
-          showIcon
-          title="数据范围说明"
-          description="按 scopeType 全量替换指定类型下的授权范围值；每项须为非空字符串，上限 1000 项。输入值后按回车即可添加标签。"
-        />
+      <DialogContent className="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>
+            配置数据范围 — {credential?.channelName} ({credential?.channelCode})
+          </DialogTitle>
+        </DialogHeader>
 
-        {errorMessage && (
-          <Alert type="error" showIcon title={errorMessage} onClose={() => setErrorMessage(null)} />
-        )}
+        <div className="flex flex-col gap-4">
+          <AppAlert
+            variant="info"
+            title="数据范围说明"
+            description="按 scopeType 全量替换指定类型下的授权范围值；每项须为非空字符串，上限 1000 项。输入值后按回车即可添加标签。"
+          />
 
-        <Form layout="vertical">
-          <Form.Item
-            label="数据范围类型 (scopeType)"
-            extra="仅支持服务端认可的 ACCOUNT、TENANT、STORE 三种类型"
-          >
-            <Space.Compact className="w-full">
-              <Select
-                className="w-full"
-                value={scopeType}
-                options={COMMON_SCOPE_TYPES}
-                onChange={(val) => setScopeType(val)}
-              />
-              <Button type="default" loading={loading} onClick={() => loadDataScopes(scopeType)}>
-                切换/重新加载
-              </Button>
-            </Space.Compact>
-          </Form.Item>
+          {errorMessage && (
+            <AppAlert
+              variant="error"
+              title={errorMessage}
+              closable
+              onClose={() => setErrorMessage(null)}
+            />
+          )}
 
-          <Divider className="my-3" />
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="scopeType">数据范围类型 (scopeType)</FieldLabel>
+              <div className="flex w-full">
+                <div className="flex-1">
+                  <ClearableSelect<string>
+                    id="scopeType"
+                    value={scopeType}
+                    allowClear={false}
+                    onChange={(val) => val && setScopeType(val)}
+                    options={COMMON_SCOPE_TYPES}
+                    className="rounded-r-none border-r-0 focus-visible:z-10"
+                  />
+                </div>
+                <LoadingButton
+                  type="button"
+                  variant="outline"
+                  className="rounded-l-none"
+                  loading={loading}
+                  onClick={() => loadDataScopes(scopeType)}
+                >
+                  切换/重新加载
+                </LoadingButton>
+              </div>
+              <FieldDescription>
+                仅支持服务端认可的 ACCOUNT、TENANT、STORE 三种类型
+              </FieldDescription>
+            </Field>
 
-          <Form.Item
-            label={
-              <Space>
-                <span>范围值列表 (scopeValues)</span>
-                <Text type="secondary" className="text-xs">
+            <div className="my-1 h-px bg-border" />
+
+            <Field>
+              <div className="flex items-center justify-between">
+                <FieldLabel htmlFor="scopeValues">范围值列表 (scopeValues)</FieldLabel>
+                <span className="text-xs text-muted-foreground">
                   已选 {scopeValues.length} / 1000 项
-                </Text>
-              </Space>
-            }
+                </span>
+              </div>
+              {loading ? (
+                <AppSpinner description="加载数据范围中..." className="py-6" />
+              ) : (
+                <TagInput
+                  id="scopeValues"
+                  value={scopeValues}
+                  onChange={(vals) => {
+                    setScopeValues(vals);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
+                  placeholder="输入范围值并回车添加标签（如 /api/v1/order/** 或 MCH_001）"
+                  disabled={!canUpdate}
+                />
+              )}
+            </Field>
+          </FieldGroup>
+        </div>
+
+        <DialogFooter className="mt-6">
+          <Button variant="outline" type="button" onClick={onClose}>
+            关闭
+          </Button>
+          <LoadingButton
+            type="button"
+            loading={saving}
+            disabled={!canUpdate}
+            onClick={handleSave}
+            title={!canUpdate ? '暂无修改权限 (需 rbac:channel-credential:update)' : undefined}
           >
-            <Spin spinning={loading}>
-              <Select
-                mode="tags"
-                className="w-full"
-                placeholder="输入范围值并回车添加标签（如 /api/v1/order/** 或 MCH_001）"
-                value={scopeValues}
-                onChange={(vals) => {
-                  setScopeValues(vals);
-                  if (errorMessage) setErrorMessage(null);
-                }}
-                tokenSeparators={[',', ' ']}
-                maxTagCount="responsive"
-                disabled={!canUpdate}
-              />
-            </Spin>
-          </Form.Item>
-        </Form>
-      </div>
-    </Modal>
+            保存此类型数据范围
+          </LoadingButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

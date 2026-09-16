@@ -1,7 +1,5 @@
 import React from 'react';
-import { Typography } from 'antd';
-
-const { Title, Text } = Typography;
+import { cn } from 'cn';
 
 export interface PageHeaderProps {
   title: React.ReactNode;
@@ -11,17 +9,11 @@ export interface PageHeaderProps {
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, extra, className }) => {
-  const rootClassName = className
-    ? `mb-6 flex items-start justify-between gap-4 ${className}`
-    : 'mb-6 flex items-start justify-between gap-4';
-
   return (
-    <div className={rootClassName}>
+    <div className={cn('mb-6 flex items-start justify-between gap-4', className)}>
       <div>
-        <Title level={3} className="m-0">
-          {title}
-        </Title>
-        {description ? <Text type="secondary">{description}</Text> : null}
+        <h3 className="text-2xl font-bold tracking-tight">{title}</h3>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {extra}
     </div>

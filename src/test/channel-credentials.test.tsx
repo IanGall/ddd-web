@@ -6,21 +6,6 @@ import { ChannelCredentialsPage } from '@/pages/channel/ChannelCredentials';
 import { useAuthStore } from '@/store/auth';
 import { channelApi } from '@/api/channel';
 
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 vi.mock('@/api/channel', () => ({
   channelApi: {
     list: vi.fn(),
@@ -111,6 +96,92 @@ describe('ChannelCredentials Components', () => {
       expect(sessionStorage.getItem('channelSecret')).toBeNull();
       expect(JSON.stringify(localStorage)).not.toContain('sec_very_secret_key_888');
       expect(JSON.stringify(sessionStorage)).not.toContain('sec_very_secret_key_888');
+    });
+
+    it('不存在右上角关闭叉号，且初始状态下关闭类按钮无法意外触发 onClose', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      // 验证不存在默认的弹窗关闭叉号（Base UI DialogClose 元素或 accessible name 为 close/关闭 的叉号按钮）
+      expect(document.querySelector('[data-slot="dialog-close"]')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^close$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^关闭$/i })).not.toBeInTheDocument();
+
+      // 区分底部带有「关闭窗口」文案的确认按钮，其初始状态必须禁用且点击无法触发 onClose
+      const confirmCloseBtn = screen.getByRole('button', { name: /我已保存，关闭窗口/i });
+      expect(confirmCloseBtn).toBeInTheDocument();
+      expect(confirmCloseBtn).toBeDisabled();
+      fireEvent.click(confirmCloseBtn);
+      expect(handleClose).not.toHaveBeenCalled();
+    });
+
+    it('按 ESC 键无法关闭弹窗，handleClose (onClose) 未被调用', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+
+      // 分别对 document 与 dialog 节点触发 Escape 键盘事件
+      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      fireEvent.keyDown(dialog, { key: 'Escape', code: 'Escape' });
+
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('点击或按下遮罩层无法关闭弹窗，handleClose (onClose) 未被调用', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+      expect(overlay).toBeInTheDocument();
+
+      // 对遮罩层分别触发 pointerdown、pointerup、click 以及 mousedown 完整交互事件序列
+      if (overlay) {
+        fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
+        fireEvent.pointerUp(overlay, { pointerType: 'mouse', button: 0 });
+        fireEvent.click(overlay, { button: 0 });
+        fireEvent.mouseDown(overlay, { button: 0 });
+      }
+
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('换另一个凭证重开后，勾选状态必须归位', () => {
+      const handleClose = vi.fn();
+      const { rerender } = render(
+        <SecretModal open={true} data={mockSecretData} onClose={handleClose} />,
+      );
+
+      const checkbox = screen.getByLabelText(/我已复制并妥善保存该渠道密钥/i);
+      const confirmCloseBtn = screen.getByRole('button', { name: /我已保存，关闭窗口/i });
+
+      expect(confirmCloseBtn).toBeDisabled();
+
+      // 用户勾选后，按钮变为可用
+      fireEvent.click(checkbox);
+      expect(confirmCloseBtn).not.toBeDisabled();
+
+      // 换另一个凭证（不同 channelCode + 不同 secretVersion）重渲染同一个组件
+      const anotherSecretData = {
+        id: '100',
+        channelCode: 'CH_WXPAY_02',
+        channelSecret: 'sec_another_secret_key_999',
+        secretVersion: 2,
+      };
+      rerender(<SecretModal open={true} data={anotherSecretData} onClose={handleClose} />);
+
+      // 断言「我已保存，关闭窗口」按钮回到 disabled、点击且 onClose 未被调用
+      expect(confirmCloseBtn).toBeDisabled();
+      fireEvent.click(confirmCloseBtn);
+      expect(handleClose).not.toHaveBeenCalled();
+
+      // 新凭证材料正常展示
+      expect(screen.getByText('CH_WXPAY_02')).toBeInTheDocument();
+      expect(screen.getByText('sec_another_secret_key_999')).toBeInTheDocument();
+      expect(screen.getByText('v2')).toBeInTheDocument();
     });
   });
 

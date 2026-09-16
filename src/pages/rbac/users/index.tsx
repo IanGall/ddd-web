@@ -1,28 +1,21 @@
 import React, { useState } from 'react';
-import {
-  Button,
-  Card,
-  Form,
-  Input,
-  message,
-  Popconfirm,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router-dom';
+import { Plus, RotateCcw, Search } from 'lucide-react';
 import { rbacApi, type RbacUserDTO } from '@/api/rbac';
 import { usePermission } from '@/hooks/usePermission';
 import { PageHeader } from '@/components/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ClearableSelect } from '@/components/ClearableSelect';
+import { ConfirmPopover } from '@/components/ConfirmPopover';
+import { DataTable, type ColumnDef, type StockFeatures } from '@/components/DataTable';
+import { StatusBadge } from '@/components/StatusBadge';
+import { useSearchForm } from '@/hooks/useSearchForm';
+import { notifySuccess } from '@/lib/toast';
 import { UserFormModal } from './UserFormModal';
 import { UserRoleModal } from './UserRoleModal';
-
-const { Text } = Typography;
 
 export const UserListPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -30,7 +23,14 @@ export const UserListPage: React.FC = () => {
   const canRead = hasPermission('rbac:user:read');
 
   // 筛选与分页状态
-  const [form] = Form.useForm();
+  const searchForm = useSearchForm<{
+    username: string;
+    status: boolean | null;
+  }>({
+    username: '',
+    status: null,
+  });
+
   const [pageNum, setPageNum] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [filterParams, setFilterParams] = useState<{
@@ -58,16 +58,16 @@ export const UserListPage: React.FC = () => {
   });
 
   const handleSearch = () => {
-    const values = form.getFieldsValue();
+    const values = searchForm.getValues();
     setPageNum(1);
     setFilterParams({
       username: values.username ? values.username.trim() : undefined,
-      status: values.status,
+      status: values.status ?? undefined,
     });
   };
 
   const handleReset = () => {
-    form.resetFields();
+    searchForm.reset();
     setPageNum(1);
     setFilterParams({});
   };
@@ -75,71 +75,77 @@ export const UserListPage: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await rbacApi.deleteUser(id);
-      message.success('用户已成功删除');
+      notifySuccess('用户已成功删除');
       queryClient.invalidateQueries({ queryKey: ['rbac-users'] });
     } catch (err) {
       console.error('删除用户失败', err);
     }
   };
 
-  const columns: ColumnsType<RbacUserDTO> = [
+  const columns: ColumnDef<StockFeatures, RbacUserDTO>[] = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
+      id: 'id',
+      header: 'ID',
+      accessorKey: 'id',
+      size: 80,
     },
     {
-      title: '用户名',
-      dataIndex: 'username',
-      key: 'username',
-      render: (val: string) => <Text strong>{val}</Text>,
+      id: 'username',
+      header: '用户名',
+      accessorKey: 'username',
+      cell: ({ row }) => <span className="font-semibold">{row.original.username}</span>,
     },
     {
-      title: '显示名称',
-      dataIndex: 'displayName',
-      key: 'displayName',
-      render: (val?: string) => val || '-',
+      id: 'displayName',
+      header: '显示名称',
+      accessorKey: 'displayName',
+      cell: ({ row }) => row.original.displayName || '-',
     },
     {
-      title: '邮箱',
-      dataIndex: 'email',
-      key: 'email',
-      render: (val?: string) => val || '-',
+      id: 'email',
+      header: '邮箱',
+      accessorKey: 'email',
+      cell: ({ row }) => row.original.email || '-',
     },
     {
-      title: '手机号',
-      dataIndex: 'mobile',
-      key: 'mobile',
-      render: (val?: string) => val || '-',
+      id: 'mobile',
+      header: '手机号',
+      accessorKey: 'mobile',
+      cell: ({ row }) => row.original.mobile || '-',
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: boolean) =>
-        status ? <Tag color="success">启用</Tag> : <Tag color="error">停用</Tag>,
+      id: 'status',
+      header: '状态',
+      accessorKey: 'status',
+      size: 100,
+      cell: ({ row }) =>
+        row.original.status ? (
+          <StatusBadge variant="success">启用</StatusBadge>
+        ) : (
+          <StatusBadge variant="destructive">停用</StatusBadge>
+        ),
     },
     {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 180,
-      render: (val?: string) => (val ? val.replace('T', ' ') : '-'),
+      id: 'createTime',
+      header: '创建时间',
+      accessorKey: 'createTime',
+      size: 180,
+      cell: ({ row }) =>
+        row.original.createTime ? row.original.createTime.replace('T', ' ') : '-',
     },
     {
-      title: '操作',
-      key: 'actions',
-      width: 200,
-      render: (_, record) => (
-        <Space size="small">
+      id: 'actions',
+      header: '操作',
+      size: 200,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
           {hasPermission('rbac:user-role:grant') && (
             <Button
-              type="link"
-              size="small"
+              variant="link"
+              size="sm"
+              className="h-auto p-1"
               onClick={() => {
-                setAuthorizingUser(record);
+                setAuthorizingUser(row.original);
                 setRoleModalOpen(true);
               }}
             >
@@ -149,10 +155,11 @@ export const UserListPage: React.FC = () => {
 
           {hasPermission('rbac:user:update') && (
             <Button
-              type="link"
-              size="small"
+              variant="link"
+              size="sm"
+              className="h-auto p-1"
               onClick={() => {
-                setEditingUser(record);
+                setEditingUser(row.original);
                 setFormModalOpen(true);
               }}
             >
@@ -161,18 +168,23 @@ export const UserListPage: React.FC = () => {
           )}
 
           {hasPermission('rbac:user:delete') && (
-            <Popconfirm
+            <ConfirmPopover
               title="确定要删除该用户吗？此操作不可逆。"
-              onConfirm={() => handleDelete(record.id)}
+              onConfirm={() => handleDelete(row.original.id)}
               okText="确定"
               cancelText="取消"
+              danger
             >
-              <Button type="link" danger size="small">
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-1 text-destructive hover:text-destructive/80"
+              >
                 删除
               </Button>
-            </Popconfirm>
+            </ConfirmPopover>
           )}
-        </Space>
+        </div>
       ),
     },
   ];
@@ -189,92 +201,101 @@ export const UserListPage: React.FC = () => {
         extra={
           hasPermission('rbac:user:create') && (
             <Button
-              type="primary"
-              icon={<PlusOutlined />}
               onClick={() => {
                 setEditingUser(null);
                 setFormModalOpen(true);
               }}
             >
+              <Plus className="mr-1.5 size-4" />
               新增用户
             </Button>
           )
         }
       />
       <Card>
-        {/* 搜索与过滤表单 */}
-        <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
-          <Form.Item name="username" label="用户名">
-            <Input placeholder="输入用户名搜索" maxLength={64} allowClear />
-          </Form.Item>
+        <CardContent className="pt-6">
+          {/* 搜索与过滤表单 */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">用户名</span>
+              <Input
+                placeholder="输入用户名搜索"
+                maxLength={64}
+                value={searchForm.values.username}
+                onChange={(e) => searchForm.setField('username', e.target.value)}
+                className="w-[180px]"
+              />
+            </div>
 
-          <Form.Item name="status" label="状态">
-            <Select
-              placeholder="账号状态"
-              allowClear
-              className="w-[120px]"
-              options={[
-                { label: '启用', value: true },
-                { label: '停用', value: false },
-              ]}
-            />
-          </Form.Item>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">状态</span>
+              <ClearableSelect<boolean>
+                placeholder="账号状态"
+                value={searchForm.values.status}
+                onChange={(val) => searchForm.setField('status', val)}
+                options={[
+                  { label: '启用', value: true },
+                  { label: '停用', value: false },
+                ]}
+                className="w-[120px]"
+              />
+            </div>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSearch}>
+                <Search className="mr-1.5 size-4" />
                 查询
               </Button>
-              <Button icon={<ReloadOutlined />} onClick={handleReset}>
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="mr-1.5 size-4" />
                 重置
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            </div>
+          </div>
 
-        {/* 用户数据表格 */}
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={data?.list || []}
-          loading={isLoading}
-          pagination={{
-            current: pageNum,
-            pageSize,
-            total: data?.total || 0,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
-            onChange: (page, size) => {
-              setPageNum(page);
-              setPageSize(size);
-            },
-          }}
-        />
+          {/* 用户数据表格 */}
+          <DataTable
+            getRowId={(row) => row.id}
+            columns={columns}
+            data={data?.list || []}
+            loading={isLoading}
+            pagination={{
+              pageNum,
+              pageSize,
+              total: data?.total || 0,
+              pageSizeOptions: [10, 20, 50, 100],
+              showSizeChanger: true,
+              onPageChange: (page, size) => {
+                setPageNum(page);
+                setPageSize(size);
+              },
+            }}
+          />
 
-        {/* 新增/编辑用户弹窗 */}
-        <UserFormModal
-          open={formModalOpen}
-          user={editingUser}
-          onClose={() => setFormModalOpen(false)}
-          onSuccess={() => {
-            setFormModalOpen(false);
-            message.success(editingUser ? '用户已更新' : '用户创建成功');
-            queryClient.invalidateQueries({ queryKey: ['rbac-users'] });
-          }}
-        />
+          {/* 新增/编辑用户弹窗 */}
+          <UserFormModal
+            open={formModalOpen}
+            user={editingUser}
+            onClose={() => setFormModalOpen(false)}
+            onSuccess={() => {
+              setFormModalOpen(false);
+              notifySuccess(editingUser ? '用户已更新' : '用户创建成功');
+              queryClient.invalidateQueries({ queryKey: ['rbac-users'] });
+            }}
+          />
 
-        {/* 分配角色弹窗 */}
-        <UserRoleModal
-          open={roleModalOpen}
-          user={authorizingUser}
-          onClose={() => setRoleModalOpen(false)}
-          onSuccess={() => {
-            setRoleModalOpen(false);
-            message.success('角色分配已更新');
-            refetch();
-          }}
-        />
+          {/* 分配角色弹窗 */}
+          <UserRoleModal
+            open={roleModalOpen}
+            user={authorizingUser}
+            onClose={() => setRoleModalOpen(false)}
+            onSuccess={() => {
+              setRoleModalOpen(false);
+              notifySuccess('角色分配已更新');
+              refetch();
+            }}
+          />
+        </CardContent>
       </Card>
     </div>
   );

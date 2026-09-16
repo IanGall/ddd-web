@@ -6,21 +6,6 @@ import { useAuthStore } from '@/store/auth';
 import { authApi } from '@/api/auth';
 import type { TokenResponse } from '@/api/types';
 
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
-
 vi.mock('@/api/auth', () => ({
   authApi: {
     logout: vi.fn(),

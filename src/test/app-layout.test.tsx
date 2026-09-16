@@ -1,23 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout } from '@/layout/AppLayout';
 import { useAuthStore } from '@/store/auth';
-
-// Mock window.matchMedia for Ant Design in jsdom
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
 
 vi.mock('@/api/auth', () => ({
   authApi: {
@@ -51,9 +36,15 @@ function renderAppLayout(initialPath = '/dashboard') {
 }
 
 describe('AppLayout 布局与菜单交互', () => {
+  const originalMatchMedia = window.matchMedia;
+
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.getState().clear();
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
   });
 
   it('1. 渲染后侧栏用户卡显示 username 与角色文案（主管理员/子账号）', () => {
@@ -199,5 +190,44 @@ describe('AppLayout 布局与菜单交互', () => {
     expect(screen.queryByText('平台凭证')).toBeNull();
     expect(screen.queryByText('渠道凭证管理')).toBeNull();
     expect(screen.queryByText('控制台概览')).toBeNull();
+  });
+
+  it('7. 移动端窄屏下侧栏为抽屉形式，点击触发器展开，点击菜单项后自动关闭', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    useAuthStore.setState({
+      username: 'admin',
+      userType: 'ADMIN_PRIMARY',
+      permissionCodes: allPermissions,
+    });
+
+    renderAppLayout();
+
+    // (a) 初始时抽屉处于收起状态，侧栏内容不在 DOM
+    expect(screen.queryByText('用户管理')).toBeNull();
+
+    // (b) 点击 SidebarTrigger（accessible name 为 'Toggle Sidebar'）展开抽屉
+    const trigger = screen.getByRole('button', { name: 'Toggle Sidebar' });
+    fireEvent.click(trigger);
+
+    // 抽屉弹出后侧栏内容出现（Base UI Dialog 在 jsdom 下通过 findByText 异步等待挂载完成）
+    const userMenuItem = await screen.findByText('用户管理');
+    expect(userMenuItem).toBeInTheDocument();
+
+    // (c) 点击其中一条菜单项后抽屉关闭，内容再次不在 DOM
+    fireEvent.click(userMenuItem);
+
+    await waitFor(() => {
+      expect(screen.queryByText('用户管理')).toBeNull();
+    });
   });
 });

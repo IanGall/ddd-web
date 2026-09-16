@@ -1,9 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Form, Input, Modal, Switch } from 'antd';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacRoleDTO } from '@/api/rbac';
-
-const { TextArea } = Input;
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { LoadingButton } from '@/components/LoadingButton';
+import { AppAlert } from '@/components/AppAlert';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 
 interface RoleFormModalProps {
   open: boolean;
@@ -12,8 +26,16 @@ interface RoleFormModalProps {
   onSuccess: () => void;
 }
 
+const roleSchema = z.object({
+  roleCode: z.string().min(1, '请输入角色编码').max(64, '角色编码长度不能超过 64 个字符'),
+  roleName: z.string().min(1, '请输入角色名称').max(128, '角色名称长度不能超过 128 个字符'),
+  roleDesc: z.string().max(255, '角色描述长度不能超过 255 个字符').optional(),
+  status: z.boolean(),
+});
+
+type RoleFormValues = z.infer<typeof roleSchema>;
+
 export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClose, onSuccess }) => {
-  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -30,26 +52,37 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
     }
   }
 
+  const { control, handleSubmit, reset } = useForm<RoleFormValues>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: {
+      roleCode: '',
+      roleName: '',
+      roleDesc: '',
+      status: true,
+    },
+  });
+
   useEffect(() => {
     if (!openKey) return;
     if (role) {
-      form.setFieldsValue({
+      reset({
         roleCode: role.roleCode,
         roleName: role.roleName,
         roleDesc: role.roleDesc || '',
         status: role.status,
       });
     } else {
-      form.resetFields();
-      form.setFieldsValue({
+      reset({
+        roleCode: '',
+        roleName: '',
+        roleDesc: '',
         status: true,
       });
     }
-  }, [openKey, role, form]);
+  }, [openKey, role, reset]);
 
-  const handleSubmit = async () => {
+  const onValid = async (values: RoleFormValues) => {
     try {
-      const values = await form.validateFields();
       setSubmitting(true);
       setFormError(null);
 
@@ -74,7 +107,7 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
           return;
         }
         setFormError(err.info || '操作失败');
-      } else if (err instanceof Error && err.name !== 'ValidateError') {
+      } else if (err instanceof Error) {
         setFormError(err.message || '操作失败');
       }
     } finally {
@@ -83,62 +116,111 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
   };
 
   return (
-    <Modal
-      title={isEdit ? `编辑角色 - ${role?.roleName}` : '新增角色'}
+    <Dialog
       open={open}
-      onCancel={onClose}
-      onOk={handleSubmit}
-      confirmLoading={submitting}
-      destroyOnHidden
-      okText={isEdit ? '保存' : '创建'}
-      cancelText="取消"
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      {formError && (
-        <Alert
-          title={formError}
-          type="error"
-          showIcon
-          closable
-          onClose={() => setFormError(null)}
-          className="mb-4"
-        />
-      )}
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `编辑角色 - ${role?.roleName}` : '新增角色'}</DialogTitle>
+        </DialogHeader>
 
-      <Form form={form} layout="vertical">
-        <Form.Item
-          label="角色编码"
-          name="roleCode"
-          rules={[
-            { required: true, message: '请输入角色编码' },
-            { max: 64, message: '角色编码长度不能超过 64 个字符' },
-          ]}
-        >
-          <Input placeholder="如 admin, role_operator" maxLength={64} />
-        </Form.Item>
+        {formError && (
+          <AppAlert
+            variant="error"
+            title={formError}
+            closable
+            onClose={() => setFormError(null)}
+            className="mb-4"
+          />
+        )}
 
-        <Form.Item
-          label="角色名称"
-          name="roleName"
-          rules={[
-            { required: true, message: '请输入角色名称' },
-            { max: 128, message: '角色名称长度不能超过 128 个字符' },
-          ]}
-        >
-          <Input placeholder="如 业务管理员, 审计专员" maxLength={128} />
-        </Form.Item>
+        <form key={openKey ?? 'closed'} onSubmit={handleSubmit(onValid)}>
+          <FieldGroup>
+            <Controller
+              name="roleCode"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="roleCode">角色编码</FieldLabel>
+                  <Input
+                    {...field}
+                    id="roleCode"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="如 admin, role_operator"
+                    maxLength={64}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item
-          label="角色描述"
-          name="roleDesc"
-          rules={[{ max: 255, message: '角色描述长度不能超过 255 个字符' }]}
-        >
-          <TextArea rows={3} placeholder="简要描述该角色的职能与权限范围" maxLength={255} />
-        </Form.Item>
+            <Controller
+              name="roleName"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="roleName">角色名称</FieldLabel>
+                  <Input
+                    {...field}
+                    id="roleName"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="如 业务管理员, 审计专员"
+                    maxLength={128}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
 
-        <Form.Item label="角色状态" name="status" valuePropName="checked">
-          <Switch checkedChildren="启用" unCheckedChildren="停用" />
-        </Form.Item>
-      </Form>
-    </Modal>
+            <Controller
+              name="roleDesc"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="roleDesc">角色描述</FieldLabel>
+                  <Textarea
+                    {...field}
+                    id="roleDesc"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="简要描述该角色的职能与权限范围"
+                    maxLength={255}
+                    rows={3}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Field orientation="horizontal" className="justify-between">
+                  <FieldLabel htmlFor="status">角色状态</FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <Switch id="status" checked={field.value} onCheckedChange={field.onChange} />
+                    <span className="text-sm text-muted-foreground">
+                      {field.value ? '启用' : '停用'}
+                    </span>
+                  </div>
+                </Field>
+              )}
+            />
+          </FieldGroup>
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" type="button" onClick={onClose} disabled={submitting}>
+              取消
+            </Button>
+            <LoadingButton loading={submitting} type="submit">
+              {isEdit ? '保存' : '创建'}
+            </LoadingButton>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };

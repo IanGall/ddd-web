@@ -1,11 +1,11 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider, App as AntdApp } from 'antd';
-import { StyleProvider } from '@ant-design/cssinjs';
-import zhCN from 'antd/locale/zh_CN';
+import { ThemeProvider, useTheme } from 'next-themes';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
+import { THEME_STORAGE_KEY, THEMES } from '@/lib/theme';
 import { router } from './router';
-import { themeConfig } from '@/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,16 +16,28 @@ const queryClient = new QueryClient({
   },
 });
 
+const ThemedToaster: React.FC = () => {
+  const { resolvedTheme } = useTheme();
+  return <Toaster theme={resolvedTheme === 'dark' ? 'dark' : 'light'} />;
+};
+
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <StyleProvider layer>
-        <ConfigProvider locale={zhCN} theme={themeConfig}>
-          <AntdApp>
-            <RouterProvider router={router} />
-          </AntdApp>
-        </ConfigProvider>
-      </StyleProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        storageKey={THEME_STORAGE_KEY}
+        themes={[...THEMES]}
+        disableTransitionOnChange
+        enableColorScheme
+      >
+        <TooltipProvider>
+          <RouterProvider router={router} />
+          <ThemedToaster />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };

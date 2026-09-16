@@ -1,11 +1,21 @@
+export interface DataAccentColors {
+  readonly light: string;
+  readonly dark: string;
+}
+
 export const DATA_PALETTE = {
-  orange: '#F0562B',
-  teal: '#14A79D',
-  navy: '#17324F',
-  amber: '#F5B21A',
-} as const;
+  orange: { light: '#F0562B', dark: '#FF8A5C' },
+  teal: { light: '#14A79D', dark: '#3FD9D0' },
+  navy: { light: '#17324F', dark: '#7FB2E3' },
+  amber: { light: '#F5B21A', dark: '#FFC53D' },
+} as const satisfies Record<string, DataAccentColors>;
 
 export type DataAccent = keyof typeof DATA_PALETTE;
+
+export const DATA_ACCENT_BADGE_ALPHA = { light: 0.12, dark: 0.18 } as const;
+
+export const resolveDataAccent = (accent: DataAccent, mode: 'light' | 'dark') =>
+  DATA_PALETTE[accent][mode];
 
 /**
  * Converts a hex color string (#RRGGBB or #RGB) to rgba(r, g, b, alpha).

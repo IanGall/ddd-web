@@ -1,33 +1,16 @@
 import React, { useState } from 'react';
-import {
-  Button,
-  Card,
-  Col,
-  Form,
-  Input,
-  message,
-  Popconfirm,
-  Result,
-  Row,
-  Select,
-  Space,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import {
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  KeyOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SafetyCertificateOutlined,
-  SearchOutlined,
-} from '@ant-design/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Edit,
+  Eye,
+  Key,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  Trash2,
+} from 'lucide-react';
 import {
   channelApi,
   type ChannelCredentialDTO,
@@ -35,13 +18,23 @@ import {
   type ChannelCredentialSecretDTO,
 } from '@/api/channel';
 import { usePermission } from '@/hooks/usePermission';
+import { PageHeader } from '@/components/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ClearableSelect } from '@/components/ClearableSelect';
+import { ConfirmPopover } from '@/components/ConfirmPopover';
+import { DataTable, type ColumnDef, type StockFeatures } from '@/components/DataTable';
+import { StatusBadge } from '@/components/StatusBadge';
+import { ResultBlock } from '@/components/ResultBlock';
+import { CopyButton } from '@/components/CopyButton';
+import { useSearchForm } from '@/hooks/useSearchForm';
+import { notifySuccess } from '@/lib/toast';
+import { cn } from 'cn';
 import { SecretModal } from './SecretModal';
 import { CreateEditModal } from './CreateEditModal';
 import { DetailDrawer } from './DetailDrawer';
 import { DataScopeModal } from './DataScopeModal';
-import { PageHeader } from '@/components/PageHeader';
-
-const { Text } = Typography;
 
 export const ChannelCredentialsPage: React.FC = () => {
   const queryClient = useQueryClient();
@@ -55,7 +48,16 @@ export const ChannelCredentialsPage: React.FC = () => {
   const canDelete = hasPermission('rbac:channel-credential:delete');
 
   // 查询与分页状态
-  const [searchForm] = Form.useForm<ChannelCredentialQueryParams>();
+  const searchForm = useSearchForm<{
+    channelCode: string;
+    channelName: string;
+    status: boolean | null;
+  }>({
+    channelCode: '',
+    channelName: '',
+    status: null,
+  });
+
   const [queryParams, setQueryParams] = useState<ChannelCredentialQueryParams>({
     pageNum: 1,
     pageSize: 20,
@@ -84,18 +86,18 @@ export const ChannelCredentialsPage: React.FC = () => {
 
   // 搜索与重置
   const handleSearch = () => {
-    const values = searchForm.getFieldsValue();
+    const values = searchForm.getValues();
     setQueryParams((prev) => ({
       ...prev,
       pageNum: 1,
       channelCode: values.channelCode?.trim() || undefined,
       channelName: values.channelName?.trim() || undefined,
-      status: values.status,
+      status: values.status ?? undefined,
     }));
   };
 
   const handleReset = () => {
-    searchForm.resetFields();
+    searchForm.reset();
     setQueryParams({
       pageNum: 1,
       pageSize: queryParams.pageSize || 20,
@@ -107,7 +109,7 @@ export const ChannelCredentialsPage: React.FC = () => {
     const nextStatus = !record.status;
     try {
       await channelApi.updateStatus(record.id, { status: nextStatus });
-      message.success(nextStatus ? '已启用该渠道凭证' : '已停用该渠道凭证');
+      notifySuccess(nextStatus ? '已启用该渠道凭证' : '已停用该渠道凭证');
       queryClient.invalidateQueries({ queryKey: ['channelCredentials'] });
     } catch (err) {
       console.error('更新渠道凭证状态失败', err);
@@ -118,7 +120,7 @@ export const ChannelCredentialsPage: React.FC = () => {
   const handleRotateSecret = async (record: ChannelCredentialDTO) => {
     try {
       const secretDto = await channelApi.rotateSecret(record.id);
-      message.success('密钥轮换成功，请立即保存新密钥！');
+      notifySuccess('密钥轮换成功，请立即保存新密钥！');
       queryClient.invalidateQueries({ queryKey: ['channelCredentials'] });
       // 打开密钥单次展示弹窗
       setSecretData(secretDto);
@@ -132,7 +134,7 @@ export const ChannelCredentialsPage: React.FC = () => {
   const handleDelete = async (record: ChannelCredentialDTO) => {
     try {
       await channelApi.delete(record.id);
-      message.success('已成功删除渠道凭证');
+      notifySuccess('已成功删除渠道凭证');
       queryClient.invalidateQueries({ queryKey: ['channelCredentials'] });
     } catch (err) {
       console.error('删除渠道凭证失败', err);
@@ -179,167 +181,179 @@ export const ChannelCredentialsPage: React.FC = () => {
   if (!canRead) {
     return (
       <Card>
-        <Result
-          status="403"
-          title="无权访问"
-          subTitle="您当前尚未分配「渠道凭证查看 (rbac:channel-credential:read)」权限，无法查看此页面。"
-        />
+        <CardContent className="pt-6">
+          <ResultBlock
+            status="403"
+            title="无权访问"
+            subTitle="您当前尚未分配「渠道凭证查看 (rbac:channel-credential:read)」权限，无法查看此页面。"
+          />
+        </CardContent>
       </Card>
     );
   }
 
-  const columns: ColumnsType<ChannelCredentialDTO> = [
+  const columns: ColumnDef<StockFeatures, ChannelCredentialDTO>[] = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 70,
+      id: 'id',
+      header: 'ID',
+      accessorKey: 'id',
+      size: 70,
     },
     {
-      title: '渠道编码',
-      dataIndex: 'channelCode',
-      key: 'channelCode',
-      ellipsis: true,
-      render: (code: string) => (
-        <Text strong copyable>
-          {code}
-        </Text>
+      id: 'channelCode',
+      header: '渠道编码',
+      accessorKey: 'channelCode',
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 font-semibold">
+          <span className="truncate">{row.original.channelCode}</span>
+          <CopyButton value={row.original.channelCode} />
+        </div>
       ),
     },
     {
-      title: '渠道名称',
-      dataIndex: 'channelName',
-      key: 'channelName',
-      ellipsis: true,
+      id: 'channelName',
+      header: '渠道名称',
+      accessorKey: 'channelName',
+      cell: ({ row }) => <span className="truncate">{row.original.channelName}</span>,
     },
     {
-      title: '密钥版本',
-      dataIndex: 'secretVersion',
-      key: 'secretVersion',
-      width: 100,
-      render: (ver: number) => <Tag color="cyan">v{ver}</Tag>,
+      id: 'secretVersion',
+      header: '密钥版本',
+      accessorKey: 'secretVersion',
+      size: 100,
+      cell: ({ row }) => <StatusBadge variant="cyan">v{row.original.secretVersion}</StatusBadge>,
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (status: boolean, record) => (
-        <Popconfirm
-          title={status ? '确定要停用此渠道凭证吗？' : '确定要启用此渠道凭证吗？'}
-          description={
-            status ? '停用后使用该凭证的外部请求将被网关拦截。' : '启用后将恢复外部渠道的访问权限。'
-          }
-          onConfirm={() => handleToggleStatus(record)}
-          okText="确定"
-          cancelText="取消"
-          disabled={!canUpdate}
-        >
-          <Tooltip
-            title={!canUpdate ? '暂无更新权限 (需 rbac:channel-credential:update)' : '点击切换状态'}
+      id: 'status',
+      header: '状态',
+      accessorKey: 'status',
+      size: 100,
+      cell: ({ row }) => {
+        const isEnabled = row.original.status;
+        return (
+          <ConfirmPopover
+            title={isEnabled ? '确定要停用此渠道凭证吗？' : '确定要启用此渠道凭证吗？'}
+            description={
+              isEnabled
+                ? '停用后使用该凭证的外部请求将被网关拦截。'
+                : '启用后将恢复外部渠道的访问权限。'
+            }
+            onConfirm={() => handleToggleStatus(row.original)}
+            okText="确定"
+            cancelText="取消"
+            disabled={!canUpdate}
           >
-            <Tag
-              color={status ? 'success' : 'error'}
-              className={canUpdate ? 'cursor-pointer' : 'cursor-not-allowed'}
+            <button
+              type="button"
+              disabled={!canUpdate}
+              title={
+                !canUpdate ? '暂无更新权限 (需 rbac:channel-credential:update)' : '点击切换状态'
+              }
+              className={cn('inline-flex', canUpdate ? 'cursor-pointer' : 'cursor-not-allowed')}
             >
-              {status ? '启用中' : '已停用'}
-            </Tag>
-          </Tooltip>
-        </Popconfirm>
-      ),
+              <StatusBadge variant={isEnabled ? 'success' : 'destructive'}>
+                {isEnabled ? '启用中' : '已停用'}
+              </StatusBadge>
+            </button>
+          </ConfirmPopover>
+        );
+      },
     },
     {
-      title: '上次轮换时间',
-      dataIndex: 'lastRotatedAt',
-      key: 'lastRotatedAt',
-      width: 180,
-      render: (val: string) => val || '-',
+      id: 'lastRotatedAt',
+      header: '上次轮换时间',
+      accessorKey: 'lastRotatedAt',
+      size: 180,
+      cell: ({ row }) => row.original.lastRotatedAt || '-',
     },
     {
-      title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
-      width: 180,
-      render: (val: string) => val || '-',
+      id: 'createTime',
+      header: '创建时间',
+      accessorKey: 'createTime',
+      size: 180,
+      cell: ({ row }) => row.original.createTime || '-',
     },
     {
-      title: '操作',
-      key: 'actions',
-      width: 320,
-      fixed: 'right',
-      render: (_, record) => (
-        <Space size="small" wrap>
+      id: 'actions',
+      header: '操作',
+      size: 320,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1">
           <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => handleOpenDetail(record)}
+            variant="link"
+            size="sm"
+            className="h-auto p-1"
+            onClick={() => handleOpenDetail(row.original)}
           >
+            <Eye className="mr-1 size-3.5" />
             详情
           </Button>
 
           <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
+            variant="link"
+            size="sm"
+            className="h-auto p-1"
             disabled={!canUpdate}
             title={!canUpdate ? '暂无编辑权限 (需 rbac:channel-credential:update)' : undefined}
-            onClick={() => handleOpenEdit(record)}
+            onClick={() => handleOpenEdit(row.original)}
           >
+            <Edit className="mr-1 size-3.5" />
             编辑
           </Button>
 
           <Button
-            type="link"
-            size="small"
-            icon={<SafetyCertificateOutlined />}
+            variant="link"
+            size="sm"
+            className="h-auto p-1"
             disabled={!canRead}
-            onClick={() => handleOpenDataScope(record)}
+            onClick={() => handleOpenDataScope(row.original)}
           >
+            <ShieldCheck className="mr-1 size-3.5" />
             数据范围
           </Button>
 
-          <Popconfirm
+          <ConfirmPopover
             title="确定要轮换该渠道的密钥吗？"
             description="警告：轮换后旧密钥立即失效，且新密钥仅展示一次，请确保各业务端已做好接收准备。"
-            onConfirm={() => handleRotateSecret(record)}
+            onConfirm={() => handleRotateSecret(row.original)}
             okText="立即轮换"
             cancelText="取消"
-            okButtonProps={{ danger: true }}
+            danger
             disabled={!canRotate}
           >
             <Button
-              type="link"
-              size="small"
-              icon={<KeyOutlined />}
+              variant="link"
+              size="sm"
+              className="h-auto p-1"
               disabled={!canRotate}
               title={!canRotate ? '暂无轮换权限 (需 rbac:channel-credential:rotate)' : undefined}
             >
+              <Key className="mr-1 size-3.5" />
               轮换密钥
             </Button>
-          </Popconfirm>
+          </ConfirmPopover>
 
-          <Popconfirm
+          <ConfirmPopover
             title="确定要删除该渠道凭证吗？"
             description="删除操作无法撤回，该渠道关联的数据范围也将同步移除。"
-            onConfirm={() => handleDelete(record)}
+            onConfirm={() => handleDelete(row.original)}
             okText="确定删除"
             cancelText="取消"
-            okButtonProps={{ danger: true }}
+            danger
             disabled={!canDelete}
           >
             <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
+              variant="link"
+              size="sm"
+              className="h-auto p-1 text-destructive hover:text-destructive/80"
               disabled={!canDelete}
               title={!canDelete ? '暂无删除权限 (需 rbac:channel-credential:delete)' : undefined}
             >
+              <Trash2 className="mr-1 size-3.5" />
               删除
             </Button>
-          </Popconfirm>
-        </Space>
+          </ConfirmPopover>
+        </div>
       ),
     },
   ];
@@ -351,82 +365,100 @@ export const ChannelCredentialsPage: React.FC = () => {
         description="管理平台各业务渠道的安全访问凭据，支持密钥单次展示安全轮换与数据范围授权。"
         extra={
           <Button
-            type="primary"
-            icon={<PlusOutlined />}
             disabled={!canCreate}
             title={!canCreate ? '暂无创建权限 (需 rbac:channel-credential:create)' : undefined}
             onClick={handleOpenCreate}
           >
+            <Plus className="mr-1.5 size-4" />
             新建渠道凭证
           </Button>
         }
       />
+
       <Card>
-        {/* 筛选过滤表单 */}
-        <Form form={searchForm} layout="horizontal">
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="channelCode" label="渠道编码" className="mb-0">
-                <Input placeholder="请输入渠道编码（≤25）" maxLength={25} allowClear />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="channelName" label="渠道名称" className="mb-0">
-                <Input placeholder="请输入渠道名称（≤128）" maxLength={128} allowClear />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="status" label="状态" className="mb-0">
-                <Select
-                  placeholder="全部状态"
-                  allowClear
-                  options={[
-                    { value: true, label: '启用中' },
-                    { value: false, label: '已停用' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
-              <Space>
-                <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                  查询
-                </Button>
-                <Button icon={<ReloadOutlined />} onClick={handleReset}>
-                  重置
-                </Button>
-                <Button onClick={() => refetch()} loading={isFetching} title="刷新当前表格数据">
-                  刷新
-                </Button>
-              </Space>
-            </Col>
-          </Row>
-        </Form>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">渠道编码</span>
+              <Input
+                placeholder="请输入渠道编码（≤25）"
+                maxLength={25}
+                value={searchForm.values.channelCode}
+                onChange={(e) => searchForm.setField('channelCode', e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">渠道名称</span>
+              <Input
+                placeholder="请输入渠道名称（≤128）"
+                maxLength={128}
+                value={searchForm.values.channelName}
+                onChange={(e) => searchForm.setField('channelName', e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium whitespace-nowrap">状态</span>
+              <ClearableSelect<boolean>
+                placeholder="全部状态"
+                value={searchForm.values.status}
+                onChange={(val) => searchForm.setField('status', val)}
+                options={[
+                  { label: '启用中', value: true },
+                  { label: '已停用', value: false },
+                ]}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button onClick={handleSearch}>
+                <Search className="mr-1.5 size-4" />
+                查询
+              </Button>
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="mr-1.5 size-4" />
+                重置
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                title="刷新当前表格数据"
+              >
+                <RefreshCw className={cn('mr-1.5 size-4', isFetching && 'animate-spin')} />
+                刷新
+              </Button>
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       <Card>
-        <Table<ChannelCredentialDTO>
-          rowKey="id"
-          columns={columns}
-          dataSource={data?.list || []}
-          loading={isLoading}
-          scroll={{ x: 1200 }}
-          pagination={{
-            current: queryParams.pageNum || 1,
-            pageSize: queryParams.pageSize || 20,
-            total: data?.total || 0,
-            showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
-            showTotal: (total) => `共 ${total} 条记录`,
-            onChange: (page, size) => {
-              setQueryParams((prev) => ({
-                ...prev,
-                pageNum: page,
-                pageSize: size,
-              }));
-            },
-          }}
-        />
+        <CardContent className="pt-6">
+          <DataTable<ChannelCredentialDTO>
+            getRowId={(row) => row.id}
+            columns={columns}
+            data={data?.list || []}
+            loading={isLoading}
+            scrollX={1200}
+            pinnedEndColumnIds={['actions']}
+            pagination={{
+              pageNum: queryParams.pageNum || 1,
+              pageSize: queryParams.pageSize || 20,
+              total: data?.total || 0,
+              pageSizeOptions: [10, 20, 50, 100],
+              showSizeChanger: true,
+              onPageChange: (page, size) => {
+                setQueryParams((prev) => ({
+                  ...prev,
+                  pageNum: page,
+                  pageSize: size,
+                }));
+              },
+            }}
+          />
+        </CardContent>
       </Card>
 
       {/* 密钥一次性展示弹窗 */}
