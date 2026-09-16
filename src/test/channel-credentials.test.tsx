@@ -97,6 +97,57 @@ describe('ChannelCredentials Components', () => {
       expect(JSON.stringify(localStorage)).not.toContain('sec_very_secret_key_888');
       expect(JSON.stringify(sessionStorage)).not.toContain('sec_very_secret_key_888');
     });
+
+    it('不存在右上角关闭叉号，且初始状态下关闭类按钮无法意外触发 onClose', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      // 验证不存在默认的弹窗关闭叉号（Base UI DialogClose 元素或 accessible name 为 close/关闭 的叉号按钮）
+      expect(document.querySelector('[data-slot="dialog-close"]')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^close$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^关闭$/i })).not.toBeInTheDocument();
+
+      // 区分底部带有「关闭窗口」文案的确认按钮，其初始状态必须禁用且点击无法触发 onClose
+      const confirmCloseBtn = screen.getByRole('button', { name: /我已保存，关闭窗口/i });
+      expect(confirmCloseBtn).toBeInTheDocument();
+      expect(confirmCloseBtn).toBeDisabled();
+      fireEvent.click(confirmCloseBtn);
+      expect(handleClose).not.toHaveBeenCalled();
+    });
+
+    it('按 ESC 键无法关闭弹窗，handleClose (onClose) 未被调用', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toBeInTheDocument();
+
+      // 分别对 document 与 dialog 节点触发 Escape 键盘事件
+      fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
+      fireEvent.keyDown(dialog, { key: 'Escape', code: 'Escape' });
+
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('点击或按下遮罩层无法关闭弹窗，handleClose (onClose) 未被调用', () => {
+      const handleClose = vi.fn();
+      render(<SecretModal open={true} data={mockSecretData} onClose={handleClose} />);
+
+      const overlay = document.querySelector('[data-slot="dialog-overlay"]');
+      expect(overlay).toBeInTheDocument();
+
+      // 对遮罩层分别触发 pointerdown、pointerup、click 以及 mousedown 完整交互事件序列
+      if (overlay) {
+        fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
+        fireEvent.pointerUp(overlay, { pointerType: 'mouse', button: 0 });
+        fireEvent.click(overlay, { button: 0 });
+        fireEvent.mouseDown(overlay, { button: 0 });
+      }
+
+      expect(handleClose).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
   });
 
   describe('ChannelCredentialsPage 权限与列表渲染', () => {

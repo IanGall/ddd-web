@@ -42,7 +42,7 @@ export interface DataTableProps<T extends RowData> {
   columns: ColumnDef<StockFeatures, T>[];
   data: T[];
   loading?: boolean;
-  getRowId: (row: T) => string; // 替代 antd rowKey
+  getRowId: (row: T) => string; // 行唯一标识，替代原 rowKey
   getSubRows?: (row: T) => T[] | undefined; // permissions 页的层级行
   emptyText?: React.ReactNode;
   scrollX?: number; // channel 页用 1200

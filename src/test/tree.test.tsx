@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { Tree, collectAllKeys, type TreeNode } from '@/components/Tree';
 
 describe('Tree 组件与父子联动语义', () => {
