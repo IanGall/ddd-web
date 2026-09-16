@@ -69,15 +69,15 @@ export const AppLayout: React.FC = () => {
   );
 
   return (
-    <SidebarProvider defaultOpen>
+    <SidebarProvider defaultOpen className="h-svh overflow-hidden">
       <AppSidebar
         items={filteredItems}
         openKeys={effectiveOpenKeys}
         onOpenKeysChange={handleOpenKeysChange}
       />
-      <SidebarInset>
+      <SidebarInset className="h-svh min-h-0 overflow-hidden">
         <HeaderBar keyword={keyword} onKeywordChange={setKeyword} />
-        <main className="p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
       </SidebarInset>
