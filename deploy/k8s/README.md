@@ -12,21 +12,34 @@
 
 ## 1. 前置：构建镜像
 
-在 `ddd-web` 仓库根目录执行：
+首选走脚本（自动跟随本机架构、幂等、与部署清单的镜像名保持一致）：
+
+```bash
+bash deploy/build.sh
+```
+
+需要手工构建时（等价命令）：
 
 ```bash
 docker build -t system/ddd-web:1.0-SNAPSHOT -f deploy/Dockerfile .
 ```
 
+镜像名与标签必须与 `deployment.yaml` 里的 `image` 一致（当前 `system/ddd-web:1.0-SNAPSHOT`）。
+
 - Dockerfile 采用多阶段构建：
-  - 构建阶段：基于 `node:20-alpine`，启用 `corepack` 调用项目指定的 `pnpm` 执行打包，输出 `dist/`；
+  - 构建阶段：基于 `node:24-alpine`，启用 `corepack` 调用项目指定的 `pnpm` 执行打包，输出 `dist/`；
   - 托管阶段：基于 `nginx:1.27-alpine`，采用 `exec` 方式启动（PID 1，透传 SIGTERM 优雅停机），托管静态产物。
+- 构建上下文是**仓库根**（`COPY` 路径相对仓根），仓根 `.dockerignore` 排除 `node_modules`/`dist`/`.agy-staff` 等——详见 `deploy/README.md` §6。
+
+> 更推荐直接用一键脚本 `bash deploy/deploy-local.sh`：它把「构建镜像 → apply 清单 → 副本数 → 滚动 → 等就绪 → 打印状态」串起来，并按镜像内容摘要跳过无变化的滚动更新。
 
 ---
 
 ## 2. 部署顺序
 
-与后端网关部署在同一个命名空间（如 `ian-ddd`）：
+一键完成（推荐）：`bash deploy/deploy-local.sh`，它依次做「确保命名空间 → 构建镜像 → apply 清单 → 副本数 → 滚动更新 → 等就绪 → 打印状态」，并支持 `status|logs|restart|clean`（详见 `deploy/README.md`）。
+
+手工执行时，与后端网关部署在同一个命名空间（如 `ian-ddd`）：
 
 ```bash
 NS=ian-ddd

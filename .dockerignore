@@ -1,0 +1,22 @@
+# Docker 构建上下文排除清单。
+#
+# 为什么必须有这个文件（2026-09-16 实测）：
+# 1. 构建上下文是仓库根（deploy/Dockerfile 里的 COPY 都是相对仓根），没有本文件时 `COPY . .`
+#    会把宿主机的 node_modules（数百 MB）与 dist、.agy-staff 等一起打进构建上下文：
+#      · node_modules 里是宿主平台（darwin）的原生二进制，覆盖容器内 pnpm 装好的 linux 依赖；
+#      · dist 是宿主构建产物，会被容器内 pnpm build 覆盖，白白多传一份；
+#      · .agy-staff 里的任务日志每次都在变，导致 COPY 层缓存失效 → 镜像 ID 每次构建都不同
+#        → deploy-local.sh 的幂等摘要（deploy-local.hash）永远判为「变了」而重复滚动更新。
+# 2. 排除后构建输入只剩源码与锁文件，重复构建命中缓存、镜像 ID 稳定，部署脚本才能真正幂等。
+#
+# 注意：不要排除 .env*——Vite 的 VITE_* 变量在构建期读取（当前只有 .env.example，VITE_API_BASE 留空走同源）。
+node_modules
+dist
+.git
+.git-backup
+.agy-staff
+coverage
+.idea
+.vscode
+.DS_Store
+*.log
