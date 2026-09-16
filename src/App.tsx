@@ -5,6 +5,7 @@ import { ConfigProvider, App as AntdApp } from 'antd';
 import { StyleProvider } from '@ant-design/cssinjs';
 import zhCN from 'antd/locale/zh_CN';
 import { router } from './router';
+import { themeConfig } from '@/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,15 +20,7 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <StyleProvider layer>
-        <ConfigProvider
-          locale={zhCN}
-          theme={{
-            token: {
-              colorPrimary: '#1677ff',
-              borderRadius: 6,
-            },
-          }}
-        >
+        <ConfigProvider locale={zhCN} theme={themeConfig}>
           <AntdApp>
             <RouterProvider router={router} />
           </AntdApp>

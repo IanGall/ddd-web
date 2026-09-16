@@ -143,12 +143,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <Layout className="min-h-screen">
-      <Sider
-        width={220}
-        theme="light"
-        className="border-r"
-        style={{ borderColor: token.colorSplit }}
-      >
+      <Sider width={220} className="border-r" style={{ borderColor: token.colorSplit }}>
         <div
           className="flex h-16 items-center justify-center border-b text-base font-bold"
           style={{ color: token.colorPrimary, borderColor: token.colorSplit }}
