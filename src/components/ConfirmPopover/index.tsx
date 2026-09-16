@@ -40,12 +40,7 @@ export function ConfirmPopover({
 
   const isOkLoading = loading || Boolean(okButtonProps?.loading);
   const isOkDisabled = Boolean(okButtonProps?.disabled) || isOkLoading;
-
-  React.useEffect(() => {
-    if (disabled && open) {
-      setOpen(false);
-    }
-  }, [disabled, open]);
+  const effectiveOpen = open && !disabled;
 
   const handleOpenChange = (nextOpen: boolean, eventDetails?: { cancel?: () => void }) => {
     if (disabled) {
@@ -87,7 +82,7 @@ export function ConfirmPopover({
   const triggerChild = React.isValidElement(children) ? children : <span>{children}</span>;
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
+    <Popover open={effectiveOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger disabled={disabled} render={triggerChild} />
       <PopoverContent
         align={align}
