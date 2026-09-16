@@ -3,7 +3,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { message } from 'antd';
+import { notifyError } from '@/lib/toast';
 import { useAuthStore } from '@/store/auth';
 import { ApiError, ResponseCode, type Response, type TokenResponse } from './types';
 import { randomId } from '@/utils/randomId';
@@ -50,7 +50,7 @@ export function redirectToLogin() {
 function notifyUiError(content: string) {
   try {
     if (typeof window !== 'undefined') {
-      message.error(content);
+      notifyError(content);
     }
   } catch {
     // 降级兼容非 DOM 环境

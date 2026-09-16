@@ -1,11 +1,9 @@
 import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider, App as AntdApp } from 'antd';
-import { StyleProvider } from '@ant-design/cssinjs';
-import zhCN from 'antd/locale/zh_CN';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/ui/sonner';
 import { router } from './router';
-import { themeConfig } from '@/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,13 +17,10 @@ const queryClient = new QueryClient({
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <StyleProvider layer>
-        <ConfigProvider locale={zhCN} theme={themeConfig}>
-          <AntdApp>
-            <RouterProvider router={router} />
-          </AntdApp>
-        </ConfigProvider>
-      </StyleProvider>
+      <TooltipProvider>
+        <RouterProvider router={router} />
+        <Toaster theme="light" />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };
