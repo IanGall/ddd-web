@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Modal, Space, Spin, Tag, Tree, Typography } from 'antd';
+import { Alert, Button, Modal, Space, Spin, Tag, Tree, Typography, theme } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { ApiError, ResponseCode } from '@/api/types';
 import { rbacApi, type RbacPermissionDTO, type RbacRoleDTO } from '@/api/rbac';
@@ -21,6 +21,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { token } = theme.useToken();
   const { refreshPermissions } = usePermission();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -53,7 +54,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
       return (
         <Space size="small">
           <Text strong>{item.permName}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>
+          <Text type="secondary" className="text-xs">
             ({item.permCode})
           </Text>
           {typeTag}
@@ -234,24 +235,17 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
           showIcon
           closable
           onClose={() => setModalError(null)}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div className="py-10 text-center">
           <Spin description="正在加载权限树与当前授权..." />
         </div>
       ) : (
         <div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
+          <div className="mb-3 flex items-center justify-between">
             <Text type="secondary">
               勾选赋予该角色的权限项。操作为<Text type="warning">全量覆盖</Text>
               ，清空即表示收回该角色全部权限。
@@ -273,14 +267,8 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
           </div>
 
           <div
-            style={{
-              maxHeight: 420,
-              overflowY: 'auto',
-              padding: '12px 16px',
-              border: '1px solid #f0f0f0',
-              borderRadius: 6,
-              background: '#fafafa',
-            }}
+            className="max-h-[420px] overflow-y-auto rounded-md border px-4 py-3"
+            style={{ borderColor: token.colorSplit, background: token.colorFillQuaternary }}
           >
             {treeData.length > 0 ? (
               <Tree
@@ -293,7 +281,7 @@ export const RolePermissionModal: React.FC<RolePermissionModalProps> = ({
                 treeData={treeData}
               />
             ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: '#999' }}>
+              <div className="py-6 text-center" style={{ color: token.colorTextTertiary }}>
                 暂无可选权限项
               </div>
             )}

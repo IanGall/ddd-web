@@ -56,7 +56,7 @@ export const DetailDrawer: React.FC<DetailDrawerProps> = ({ open, credentialId, 
     <Drawer title="渠道凭证详情" placement="right" size={560} open={open} onClose={onClose}>
       <Spin spinning={loading}>
         {data ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="flex flex-col gap-4">
             <Alert
               type="info"
               showIcon

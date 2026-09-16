@@ -239,7 +239,7 @@ export const ChannelCredentialsPage: React.FC = () => {
           >
             <Tag
               color={status ? 'success' : 'error'}
-              style={{ cursor: canUpdate ? 'pointer' : 'not-allowed' }}
+              className={canUpdate ? 'cursor-pointer' : 'cursor-not-allowed'}
             >
               {status ? '启用中' : '已停用'}
             </Tag>
@@ -344,18 +344,11 @@ export const ChannelCredentialsPage: React.FC = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       <Card>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 20,
-          }}
-        >
+        <div className="mb-5 flex items-center justify-between">
           <div>
-            <Title level={4} style={{ margin: 0 }}>
+            <Title level={4} className="m-0">
               渠道凭证管理
             </Title>
             <Text type="secondary">
@@ -379,17 +372,17 @@ export const ChannelCredentialsPage: React.FC = () => {
         <Form form={searchForm} layout="horizontal">
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="channelCode" label="渠道编码" style={{ marginBottom: 0 }}>
+              <Form.Item name="channelCode" label="渠道编码" className="mb-0">
                 <Input placeholder="请输入渠道编码（≤25）" maxLength={25} allowClear />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="channelName" label="渠道名称" style={{ marginBottom: 0 }}>
+              <Form.Item name="channelName" label="渠道名称" className="mb-0">
                 <Input placeholder="请输入渠道名称（≤128）" maxLength={128} allowClear />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12} md={8} lg={6}>
-              <Form.Item name="status" label="状态" style={{ marginBottom: 0 }}>
+              <Form.Item name="status" label="状态" className="mb-0">
                 <Select
                   placeholder="全部状态"
                   allowClear

@@ -51,6 +51,9 @@ pnpm test
 
 # 生产构建
 pnpm build
+
+# 构建镜像并一键部署到本地 k8s（deploy | status | logs | restart | clean，见 deploy/README.md）
+bash deploy/deploy-local.sh
 ```
 
 ## 4. 网络架构与代理机制
@@ -77,3 +80,28 @@ pnpm build
 1. **令牌仅存内存**：`accessToken` 与 `refreshToken` 仅保存在 Zustand 内存状态中，严禁写入 `localStorage`、`sessionStorage`、URL 或日志。
 2. **Refresh Token 单飞串行化**：后端对于同一 Refresh Token 的并发请求视为重放并撤销整个设备会话族。前端在 401 触发时通过互斥锁/共享 Promise 确保全局同一时刻仅发起一次刷新请求，其余并发请求排队等待刷新结果后重放。
 3. **设备指纹**：`deviceId` 仅在内存中生成一次并复用，会话关闭即销毁。
+
+## 6. 样式约定
+
+本仓采用**口径 C（分工）**策略收敛前端样式：
+
+### 核心分工与三条规则
+
+1. **几何用 Tailwind**：布局、间距、尺寸、圆角、边框宽度/样式一律使用 Tailwind 工具类（`flex`/`gap-*`/`p-*`/`m-*`/`w-*`/`h-*`/`rounded-*`/`border` 等）。
+2. **颜色只来自 antd token**：不得在 Tailwind 里写颜色工具类或颜色字面量（如 `bg-[#...]`、`text-[#...]`）；需要颜色时一律使用 `theme.useToken()` 绑定内联 `style`，或使用带语义的 antd 组件（如 `<Text type="warning">`、`<Alert>`、`<Tag>` 等）。
+3. **交互件用 antd**：可聚焦、有交互、需 Portal 或需 a11y 语义的元素一律使用 antd 组件；纯展示容器使用原生 HTML 元素 + Tailwind + token。
+
+### 五条红线（严格约束）
+
+1. **红线 1**：Tailwind 里不出现颜色字面量工具类（`grep -rnE '(bg|text|border)-\[#' src` 必须为 0）。
+2. **红线 2**：内联 `style` 只用于绑定 antd token 或传给 antd prop 的样式对象（禁止内联硬编码字面量颜色或尺寸）。
+3. **红线 3**：不跨体系引用 `var(--ant-*)`（antd CSS 变量只挂载在 antd 自身元素容器上，`:root`/`body`/`#root` 取不到，Portal 场景亦会失效；因此 token 只能在 JS 侧通过 `theme.useToken()` 获取）。
+4. **红线 4**：响应式前缀只用一套（Tailwind 断点已在 `src/index.css` 的 `@theme` 中对齐 antd 媒体查询：576px / 768px / 992px / 1200px / 1600px，禁止改回默认值；antd 的 `xs` 为 `max-width: 575px`，在 Tailwind 里由无前缀的基准样式表达，因此不引入 `--breakpoint-xs`）。
+5. **红线 5**：业务代码与测试不出现 `.ant-*` 选择器（严禁强行覆写 antd 组件内部结构）。
+
+### 基础设施约定
+
+- **全局样式入口与 Layer 声明**：`src/index.css` 开头的 `@layer theme, base, antd, components, utilities;` 是与 antd 样式共存的前提，用于确保 Tailwind utilities 优先级高于 antd 且 base 样式不破坏组件样式，**禁止删改**；**禁止**出现裸 `@import 'tailwindcss'`。
+- **antd 样式降权**：antd 样式通过 `src/App.tsx` 中的 `<StyleProvider layer>` 放入 `@layer antd` 降权，`StyleProvider` 必须包裹在 `ConfigProvider` 外层（图标样式依赖）。
+- **Tailwind 使用边界**：Tailwind 工具类仅用于自定义容器与非 antd 裸元素的布局与间距，**禁止**用它覆盖 antd 组件内部样式（如 Button 背景、Input 边框、Table 单元格、Menu 等）。
+- **人工核对要求**：样式回归无法用 jsdom 测试发现，必须在真实浏览器核对。

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, Form, Input, Typography, Alert } from 'antd';
+import { Alert, Button, Card, Form, Input, Typography, theme } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authApi } from '@/api/auth';
@@ -9,6 +9,7 @@ import { ApiError } from '@/api/types';
 const { Title, Text } = Typography;
 
 export const LoginPage: React.FC = () => {
+  const { token } = theme.useToken();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -59,23 +60,12 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: '#f0f2f5',
-      }}
+      className="flex min-h-screen items-center justify-center"
+      style={{ background: token.colorBgLayout }}
     >
-      <Card
-        style={{
-          width: 400,
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-          borderRadius: 8,
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={3} style={{ marginBottom: 8 }}>
+      <Card className="w-[400px] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+        <div className="mb-6 text-center">
+          <Title level={3} className="mb-2">
             管理端控制台
           </Title>
           <Text type="secondary">领域驱动架构基础认证体系</Text>
@@ -88,7 +78,7 @@ export const LoginPage: React.FC = () => {
             showIcon
             closable
             onClose={() => setErrorMessage(null)}
-            style={{ marginBottom: 20 }}
+            className="mb-5"
           />
         )}
 
@@ -121,7 +111,7 @@ export const LoginPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0 }}>
+          <Form.Item className="mb-0">
             <Button type="primary" htmlType="submit" block loading={loading}>
               登 录
             </Button>

@@ -79,7 +79,7 @@ export const CreateEditModal: React.FC<CreateEditModalProps> = ({
       destroyOnHidden
       width={520}
     >
-      <Form form={form} layout="vertical" preserve={false} style={{ marginTop: 16 }}>
+      <Form form={form} layout="vertical" preserve={false} className="mt-4">
         {mode === 'edit' && initialData && (
           <Form.Item label="渠道编码">
             <Input value={initialData.channelCode} disabled />

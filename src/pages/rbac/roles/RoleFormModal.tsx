@@ -100,7 +100,7 @@ export const RoleFormModal: React.FC<RoleFormModalProps> = ({ open, role, onClos
           showIcon
           closable
           onClose={() => setFormError(null)}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
 

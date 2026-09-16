@@ -180,16 +180,9 @@ export const RoleListPage: React.FC = () => {
 
   return (
     <Card>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="m-0">
             角色管理
           </Title>
           <Text type="secondary">管理系统角色及其关联的权限集合</Text>
@@ -210,11 +203,7 @@ export const RoleListPage: React.FC = () => {
       </div>
 
       {/* 搜索过滤表单 */}
-      <Form
-        form={form}
-        layout="inline"
-        style={{ marginBottom: 16, flexWrap: 'wrap', gap: '8px 0' }}
-      >
+      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
         <Form.Item name="roleCode" label="角色编码">
           <Input placeholder="输入编码搜索" maxLength={64} allowClear />
         </Form.Item>
@@ -227,7 +216,7 @@ export const RoleListPage: React.FC = () => {
           <Select
             placeholder="角色状态"
             allowClear
-            style={{ width: 120 }}
+            className="w-[120px]"
             options={[
               { label: '启用', value: true },
               { label: '停用', value: false },

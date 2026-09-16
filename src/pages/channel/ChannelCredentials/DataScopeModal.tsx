@@ -160,7 +160,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
         </Button>,
       ]}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 12 }}>
+      <div className="mt-3 flex flex-col gap-4">
         <Alert
           type="info"
           showIcon
@@ -169,12 +169,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
         />
 
         {errorMessage && (
-          <Alert
-            type="error"
-            showIcon
-            title={errorMessage}
-            onClose={() => setErrorMessage(null)}
-          />
+          <Alert type="error" showIcon title={errorMessage} onClose={() => setErrorMessage(null)} />
         )}
 
         <Form layout="vertical">
@@ -182,9 +177,9 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
             label="数据范围类型 (scopeType)"
             extra="仅支持服务端认可的 ACCOUNT、TENANT、STORE 三种类型"
           >
-            <Space.Compact style={{ width: '100%' }}>
+            <Space.Compact className="w-full">
               <Select
-                style={{ width: '100%' }}
+                className="w-full"
                 value={scopeType}
                 options={COMMON_SCOPE_TYPES}
                 onChange={(val) => setScopeType(val)}
@@ -195,13 +190,13 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
             </Space.Compact>
           </Form.Item>
 
-          <Divider style={{ margin: '12px 0' }} />
+          <Divider className="my-3" />
 
           <Form.Item
             label={
               <Space>
                 <span>范围值列表 (scopeValues)</span>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" className="text-xs">
                   已选 {scopeValues.length} / 1000 项
                 </Text>
               </Space>
@@ -210,7 +205,7 @@ export const DataScopeModal: React.FC<DataScopeModalProps> = ({ open, credential
             <Spin spinning={loading}>
               <Select
                 mode="tags"
-                style={{ width: '100%' }}
+                className="w-full"
                 placeholder="输入范围值并回车添加标签（如 /api/v1/order/** 或 MCH_001）"
                 value={scopeValues}
                 onChange={(vals) => {

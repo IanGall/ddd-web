@@ -220,16 +220,9 @@ export const PermissionListPage: React.FC = () => {
 
   return (
     <Card>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="m-0">
             权限项管理
           </Title>
           <Text type="secondary">管理目录、菜单与按钮三级权限节点，内置权限禁止删除</Text>
@@ -262,11 +255,7 @@ export const PermissionListPage: React.FC = () => {
       </div>
 
       {/* 搜索与过滤表单 */}
-      <Form
-        form={form}
-        layout="inline"
-        style={{ marginBottom: 16, flexWrap: 'wrap', gap: '8px 0' }}
-      >
+      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
         <Form.Item name="permCode" label="权限编码">
           <Input placeholder="支持模糊编码" maxLength={64} allowClear />
         </Form.Item>
@@ -279,7 +268,7 @@ export const PermissionListPage: React.FC = () => {
           <Select
             placeholder="全部类型"
             allowClear
-            style={{ width: 110 }}
+            className="w-[110px]"
             options={[
               { label: '目录', value: 1 },
               { label: '菜单', value: 2 },
@@ -289,14 +278,14 @@ export const PermissionListPage: React.FC = () => {
         </Form.Item>
 
         <Form.Item name="parentId" label="父节点 ID">
-          <InputNumber placeholder="0 为根" min={0} style={{ width: 100 }} />
+          <InputNumber placeholder="0 为根" min={0} className="w-[100px]" />
         </Form.Item>
 
         <Form.Item name="status" label="状态">
           <Select
             placeholder="状态"
             allowClear
-            style={{ width: 100 }}
+            className="w-[100px]"
             options={[
               { label: '启用', value: true },
               { label: '停用', value: false },

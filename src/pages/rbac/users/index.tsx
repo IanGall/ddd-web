@@ -182,16 +182,9 @@ export const UserListPage: React.FC = () => {
 
   return (
     <Card>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="m-0">
             用户管理
           </Title>
           <Text type="secondary">管理当前账号下的系统管理员与子账号信息</Text>
@@ -212,11 +205,7 @@ export const UserListPage: React.FC = () => {
       </div>
 
       {/* 搜索与过滤表单 */}
-      <Form
-        form={form}
-        layout="inline"
-        style={{ marginBottom: 16, flexWrap: 'wrap', gap: '8px 0' }}
-      >
+      <Form form={form} layout="inline" className="mb-4 flex-wrap gap-y-2">
         <Form.Item name="username" label="用户名">
           <Input placeholder="输入用户名搜索" maxLength={64} allowClear />
         </Form.Item>
@@ -225,7 +214,7 @@ export const UserListPage: React.FC = () => {
           <Select
             placeholder="账号状态"
             allowClear
-            style={{ width: 120 }}
+            className="w-[120px]"
             options={[
               { label: '启用', value: true },
               { label: '停用', value: false },

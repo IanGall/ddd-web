@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Col, Row, Space, Statistic, Tag, Tooltip, Typography } from 'antd';
+import { Button, Card, Col, Row, Space, Statistic, Tag, Tooltip, Typography, theme } from 'antd';
 import {
   ApiOutlined,
   DashboardOutlined,
@@ -20,6 +20,7 @@ import { ApiError, type PageResponse } from '@/api/types';
 const { Title, Text, Paragraph } = Typography;
 
 export const DashboardPage: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const username = useAuthStore((state) => state.username);
   const userType = useAuthStore((state) => state.userType);
@@ -142,10 +143,10 @@ export const DashboardPage: React.FC = () => {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* 顶部欢迎卡片 */}
       <Card>
-        <Title level={4} style={{ marginTop: 0 }}>
+        <Title level={4} className="mt-0">
           欢迎，{username || '管理员'}！
         </Title>
         <Paragraph type="secondary">
@@ -172,10 +173,12 @@ export const DashboardPage: React.FC = () => {
                 <Statistic
                   title="用户总数"
                   value={usersStat.value}
-                  prefix={<UserOutlined style={{ marginRight: 4 }} />}
-                  styles={{ content: usersStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
+                  prefix={<UserOutlined className="mr-1" />}
+                  styles={{
+                    content: usersStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
+                  }}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" className="text-xs">
                   {canReadUsers ? '系统用户实体规模' : '无读取权限'}
                 </Text>
               </div>
@@ -190,10 +193,12 @@ export const DashboardPage: React.FC = () => {
                 <Statistic
                   title="角色总数"
                   value={rolesStat.value}
-                  prefix={<TeamOutlined style={{ marginRight: 4 }} />}
-                  styles={{ content: rolesStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
+                  prefix={<TeamOutlined className="mr-1" />}
+                  styles={{
+                    content: rolesStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
+                  }}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" className="text-xs">
                   {canReadRoles ? '安全权限角色定义' : '无读取权限'}
                 </Text>
               </div>
@@ -208,10 +213,14 @@ export const DashboardPage: React.FC = () => {
                 <Statistic
                   title="权限项总数"
                   value={permissionsStat.value}
-                  prefix={<KeyOutlined style={{ marginRight: 4 }} />}
-                  styles={{ content: permissionsStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
+                  prefix={<KeyOutlined className="mr-1" />}
+                  styles={{
+                    content: permissionsStat.isDimmed
+                      ? { color: token.colorTextTertiary }
+                      : undefined,
+                  }}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" className="text-xs">
                   {canReadPermissions ? '功能与接口权限配置' : '无读取权限'}
                 </Text>
               </div>
@@ -226,10 +235,12 @@ export const DashboardPage: React.FC = () => {
                 <Statistic
                   title="渠道凭证总数"
                   value={channelsStat.value}
-                  prefix={<ApiOutlined style={{ marginRight: 4 }} />}
-                  styles={{ content: channelsStat.isDimmed ? { color: '#8c8c8c' } : undefined }}
+                  prefix={<ApiOutlined className="mr-1" />}
+                  styles={{
+                    content: channelsStat.isDimmed ? { color: token.colorTextTertiary } : undefined,
+                  }}
                 />
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" className="text-xs">
                   {canReadChannels ? '接入渠道密钥凭证' : '无读取权限'}
                 </Text>
               </div>
@@ -242,12 +253,12 @@ export const DashboardPage: React.FC = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={8}>
           <Card title="网关服务状态" size="small">
-            <p>
+            <p className="mt-4 mb-4">
               <strong>应用名称:</strong>{' '}
               {gatewayQuery.data?.application ||
                 (gatewayQuery.isLoading ? '加载中...' : 'ian-ddd-gateway')}
             </p>
-            <p style={{ marginBottom: 0 }}>
+            <p className="mb-0">
               <strong>运行状态:</strong>{' '}
               <Tag
                 color={
@@ -266,9 +277,9 @@ export const DashboardPage: React.FC = () => {
 
         <Col xs={24} sm={12} md={8}>
           <Card title="会话管理概况" size="small">
-            <p>
+            <p className="mt-4 mb-4">
               <strong>当前活跃会话数:</strong>{' '}
-              <Text strong style={{ fontSize: 16 }}>
+              <Text strong className="text-base">
                 {sessionsQuery.isError
                   ? '-'
                   : (sessionsQuery.data?.length ?? (sessionsQuery.isLoading ? '...' : 0))}
@@ -277,7 +288,7 @@ export const DashboardPage: React.FC = () => {
             <Button
               type="link"
               icon={<DesktopOutlined />}
-              style={{ paddingLeft: 0 }}
+              className="pl-0"
               onClick={() => navigate('/sessions')}
             >
               前往「我的会话」管理终端 →
@@ -287,17 +298,17 @@ export const DashboardPage: React.FC = () => {
 
         <Col xs={24} sm={12} md={8}>
           <Card title="快捷导航" size="small">
-            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="small" className="w-full">
               <Button
                 type="link"
                 icon={<DashboardOutlined />}
-                style={{ paddingLeft: 0 }}
+                className="pl-0"
                 disabled={!canReadChannels}
                 onClick={() => navigate('/platform/channel-credentials')}
               >
                 前往「渠道凭证管理」{canReadChannels ? '→' : '（无权限）'}
               </Button>
-              <Text type="secondary" style={{ fontSize: 12 }}>
+              <Text type="secondary" className="text-xs">
                 根据登录主体分配的权限动态提供可访问业务模块
               </Text>
             </Space>

@@ -135,7 +135,7 @@ export const PermissionFormModal: React.FC<PermissionFormModalProps> = ({
           showIcon
           closable
           onClose={() => setFormError(null)}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
 

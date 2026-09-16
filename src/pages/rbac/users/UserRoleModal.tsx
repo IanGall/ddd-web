@@ -106,17 +106,17 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
           showIcon
           closable
           onClose={() => setModalError(null)}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+        <div className="py-10 text-center">
           <Spin description="正在加载角色列表与当前授权..." />
         </div>
       ) : (
         <div>
-          <div style={{ marginBottom: 12 }}>
+          <div className="mb-3">
             <Text type="secondary">
               为用户 <Text strong>{user?.username}</Text> 分配所属角色。此操作为
               <Text type="warning">全量覆盖</Text>，清空选择则表示移除该用户的全部角色。
@@ -126,7 +126,7 @@ export const UserRoleModal: React.FC<UserRoleModalProps> = ({ open, user, onClos
           <Select
             mode="multiple"
             allowClear
-            style={{ width: '100%' }}
+            className="w-full"
             placeholder="请选择分配给该用户的角色"
             value={selectedRoleIds}
             onChange={(values) => setSelectedRoleIds(values)}

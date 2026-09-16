@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Button, Dropdown, Layout, Menu, Space, Tag, Typography } from 'antd';
+import { Button, Dropdown, Layout, Menu, Space, Tag, Typography, theme } from 'antd';
 import type { MenuProps } from 'antd';
 import {
   DashboardOutlined,
@@ -33,6 +33,7 @@ const domainModuleFiles = import.meta.glob<DomainModule>('../router/modules/*.ts
 });
 
 export const AppLayout: React.FC = () => {
+  const { token } = theme.useToken();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -141,19 +142,16 @@ export const AppLayout: React.FC = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={220} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
+    <Layout className="min-h-screen">
+      <Sider
+        width={220}
+        theme="light"
+        className="border-r"
+        style={{ borderColor: token.colorSplit }}
+      >
         <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderBottom: '1px solid #f0f0f0',
-            fontWeight: 'bold',
-            fontSize: 16,
-            color: '#1677ff',
-          }}
+          className="flex h-16 items-center justify-center border-b text-base font-bold"
+          style={{ color: token.colorPrimary, borderColor: token.colorSplit }}
         >
           Admin Console
         </div>
@@ -173,16 +171,10 @@ export const AppLayout: React.FC = () => {
 
       <Layout>
         <Header
-          style={{
-            background: '#fff',
-            padding: '0 24px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottom: '1px solid #f0f0f0',
-          }}
+          className="flex items-center justify-between border-b px-6"
+          style={{ background: token.colorBgContainer, borderColor: token.colorSplit }}
         >
-          <Text strong style={{ fontSize: 16 }}>
+          <Text strong className="text-base">
             DDD 管理端基座
           </Text>
 
@@ -203,7 +195,7 @@ export const AppLayout: React.FC = () => {
           </Space>
         </Header>
 
-        <Content style={{ margin: 24, minHeight: 280 }}>
+        <Content className="m-6 min-h-[280px]">
           <Outlet />
         </Content>
       </Layout>

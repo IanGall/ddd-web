@@ -106,16 +106,9 @@ export const SessionsPage: React.FC = () => {
 
   return (
     <Card>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="m-0">
             我的会话
           </Title>
           <Text type="secondary">查看已建立登录会话并可随时吊销非本设备登录</Text>

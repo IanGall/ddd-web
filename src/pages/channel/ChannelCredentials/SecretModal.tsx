@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { Alert, Button, Checkbox, Descriptions, message, Modal, Space, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Descriptions,
+  message,
+  Modal,
+  Space,
+  theme,
+  Typography,
+} from 'antd';
 import { CopyOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { ChannelCredentialSecretDTO } from '@/api/channel';
 
@@ -20,6 +30,7 @@ export interface SecretModalProps {
  * 4. 严禁将 channelSecret 存入任何持久化存储（localStorage / sessionStorage / 日志 / URL）。
  */
 export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose }) => {
+  const { token } = theme.useToken();
   const [confirmedSaved, setConfirmedSaved] = useState(false);
 
   // 打开目标变化时，在渲染期重置保存确认状态（React 官方「prop 变化时调整 state」模式）
@@ -85,7 +96,9 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
     <Modal
       title={
         <Space>
-          <ExclamationCircleOutlined style={{ color: '#faad14' }} />
+          <Text type="warning">
+            <ExclamationCircleOutlined />
+          </Text>
           <span>渠道密钥凭据（仅展示一次）</span>
         </Space>
       }
@@ -111,7 +124,7 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
       <Alert
         type="warning"
         showIcon
-        style={{ marginBottom: 20 }}
+        className="mb-5"
         title="安全须知：密钥材料关闭后无法再次获取"
         description="渠道密钥（channelSecret）在生成后仅通过当前窗口返回一次，服务端永不返回明文，亦不会持久化保存在任何前端缓存中。关闭本弹窗后将无法再次查看，若丢失只能重新轮换密钥。请立即复制并妥善保存在安全的密钥管理系统中！"
       />
@@ -126,19 +139,11 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
           <Text code>v{data.secretVersion}</Text>
         </Descriptions.Item>
         <Descriptions.Item label="渠道密钥 (channelSecret)">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             <Paragraph
               code
-              style={{
-                margin: 0,
-                padding: '8px 12px',
-                wordBreak: 'break-all',
-                userSelect: 'all',
-                fontSize: 13,
-                background: '#fafafa',
-                border: '1px solid #d9d9d9',
-                borderRadius: 4,
-              }}
+              className="m-0 rounded border px-3 py-2 text-[13px] break-all select-all"
+              style={{ borderColor: token.colorBorder, background: token.colorFillQuaternary }}
             >
               {data.channelSecret}
             </Paragraph>
@@ -152,18 +157,13 @@ export const SecretModal: React.FC<SecretModalProps> = ({ open, data, onClose })
       </Descriptions>
 
       <div
-        style={{
-          marginTop: 20,
-          padding: '12px 16px',
-          background: '#fffbe6',
-          border: '1px solid #ffe58f',
-          borderRadius: 6,
-        }}
+        className="mt-5 rounded-md border px-4 py-3"
+        style={{ borderColor: token.colorWarningBorder, background: token.colorWarningBg }}
       >
         <Checkbox
           checked={confirmedSaved}
           onChange={(e) => setConfirmedSaved(e.target.checked)}
-          style={{ fontWeight: 500 }}
+          className="font-medium"
         >
           我已复制并妥善保存该渠道密钥，知晓关闭后无法再次查看
         </Checkbox>

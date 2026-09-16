@@ -119,7 +119,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ open, user, onClos
           showIcon
           closable
           onClose={() => setFormError(null)}
-          style={{ marginBottom: 16 }}
+          className="mb-4"
         />
       )}
 
