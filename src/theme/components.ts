@@ -12,9 +12,6 @@ export const SIDE_MENU_TOKENS = {
   itemMarginBlock: 2,
   activeBarWidth: 0,
   activeBarBorderWidth: 0,
-  groupTitleColor: '#9CA3AF',
-  groupTitleFontSize: 11,
-  groupTitleLineHeight: 1.6,
 } satisfies NonNullable<ThemeConfig['components']>['Menu'];
 
 export const components: ThemeConfig['components'] = {
