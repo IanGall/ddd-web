@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check-style": "bash scripts/check-style.sh"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

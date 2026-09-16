@@ -5,3 +5,4 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 deploy
 .agy-staff
+src/components/ui
