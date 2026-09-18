@@ -1,7 +1,7 @@
 # 前端管理端（SPA）k8s 部署清单。
 #
 # 前置：镜像已构建 —— 本模块无 build.sh，在 ddd-web 仓根目录下执行：
-#   docker build -t system/ddd-web:1.0-SNAPSHOT -f deploy/Dockerfile .
+#   docker build -t system/ian-ddd-web:1.0-SNAPSHOT -f deploy/Dockerfile .
 #
 # 刻意不做的事（与网关清单注释风格一致）：
 # 1. 不配置 ConfigMap / Secret：前端属于纯静态单页应用（SPA），构建期已将配置内联至静态 bundle，
@@ -50,7 +50,7 @@ spec:
                     app.kubernetes.io/name: ddd-web
       containers:
         - name: web
-          image: system/ddd-web:1.0-SNAPSHOT
+          image: system/ian-ddd-web:1.0-SNAPSHOT
           # SNAPSHOT 是可移动 tag：生产请改为不可变 tag 或 digest
           imagePullPolicy: IfNotPresent
           ports:

@@ -21,7 +21,12 @@ set -euo pipefail
 # 因为 Dockerfile 里的 COPY package.json / COPY deploy/nginx.conf 都是相对仓根解析的，构建上下文必须是仓根
 cd "$(dirname "$0")/.."
 
-IMAGE="${IMAGE:-system/ddd-web}"
+# 镜像名带**项目前缀**（从项目目录名派生），与 deploy/deploy-local.sh 的规则一致。
+# 原因：本机 Docker 镜像库全局共享，两个项目构建同名镜像会互相覆盖。
+_PROJ_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+_PROJ_BASE="$(basename "${_PROJ_ROOT}")"
+case "${_PROJ_BASE}" in ian-*) _PROJ_PREFIX="${_PROJ_BASE#ian-}" ;; *) _PROJ_PREFIX="ddd" ;; esac
+IMAGE="${IMAGE:-system/ian-${_PROJ_PREFIX}-web}"
 TAG="${TAG:-1.0-SNAPSHOT}"
 
 # 未显式指定架构时跟随 Docker 服务端架构；守护进程不可达时退回本机 uname

@@ -38,15 +38,29 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${REPO_ROOT}"
 
+# 项目前缀：从项目目录名派生（/path/to/ian-<前缀> → <前缀>）。
+# 它是「复制本项目派生的新项目无需改脚本」的单一来源——镜像名与 k8s 命名空间都由它派生。
+if [ -z "${PROJECT_PREFIX:-}" ]; then
+  _derived_base="$(basename "$(cd "${REPO_ROOT}/.." && pwd)")"
+  case "${_derived_base}" in
+    ian-*) PROJECT_PREFIX="${_derived_base#ian-}" ;;
+    *)     PROJECT_PREFIX="ddd" ;;   # 目录名不符合约定时回退到历史默认值
+  esac
+fi
+
 APP="ddd-web"
-IMAGE="system/ddd-web"
+# 镜像名带**项目前缀**。本机 Docker 镜像库是全局共享的：若两个项目构建同名同 tag 的
+# 镜像，后者会静默覆盖前者，而 k8s 用 imagePullPolicy: IfNotPresent —— 已在跑的 Pod
+# 不受影响，但**重启 / 扩缩容**产生的新 Pod 会拉到被覆盖的镜像，
+# 即「本项目的命名空间跑对方项目的前端」。故镜像名必须隔离。
+IMAGE="system/ian-${PROJECT_PREFIX}-web"
 TAG="1.0-SNAPSHOT"
 MANIFEST_DIR="deploy/k8s"
 # 与后端脚本使用同一个注解名，便于统一排查「为什么没滚动」
 HASH_ANNOTATION="deploy-local.hash"
 
 ACTION="deploy"
-NAMESPACE="ian-ddd"
+NAMESPACE="ian-${PROJECT_PREFIX}"
 REPLICAS="1"
 SKIP_BUILD="no"
 WITH_IMAGES="no"
