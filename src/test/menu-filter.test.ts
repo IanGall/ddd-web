@@ -8,7 +8,7 @@ const testMenuFixture: readonly DomainMenuItem[] = [
   },
   {
     key: 'rbac-group',
-    label: 'RBAC 权限管理',
+    label: '权限管理',
     children: [
       {
         key: '/rbac/users',
@@ -72,7 +72,7 @@ describe('menuFilter 菜单过滤纯逻辑与分组 Key 收集', () => {
     expect(result).toEqual([
       {
         key: 'rbac-group',
-        label: 'RBAC 权限管理',
+        label: '权限管理',
         children: [
           {
             key: '/rbac/users',
@@ -85,12 +85,12 @@ describe('menuFilter 菜单过滤纯逻辑与分组 Key 收集', () => {
   });
 
   it('4. 关键字命中分组 label → 该组以「全部已授权子项」保留（不是只留匹配的子项）', () => {
-    // 关键字命中 'RBAC'（各子项 label 均不包含 'RBAC'）
-    const result = filterMenuItems(testMenuFixture, 'RBAC', () => true);
+    // 关键字命中分组 label「权限管理」（各子项 label 均不包含该连续串，故只能靠分组命中）
+    const result = filterMenuItems(testMenuFixture, '权限管理', () => true);
     expect(result).toEqual([
       {
         key: 'rbac-group',
-        label: 'RBAC 权限管理',
+        label: '权限管理',
         children: [
           {
             key: '/rbac/users',
@@ -113,13 +113,13 @@ describe('menuFilter 菜单过滤纯逻辑与分组 Key 收集', () => {
   });
 
   it('5. 关键字命中分组 label、但部分子项无权限 → 只留已授权子项', () => {
-    // 关键字命中 'RBAC'，但当前用户仅具备 rbac:user:read 权限
+    // 关键字命中分组 label「权限管理」，但当前用户仅具备 rbac:user:read 权限
     const hasPermission = (code: string) => code === 'rbac:user:read';
-    const result = filterMenuItems(testMenuFixture, 'RBAC', hasPermission);
+    const result = filterMenuItems(testMenuFixture, '权限管理', hasPermission);
     expect(result).toEqual([
       {
         key: 'rbac-group',
-        label: 'RBAC 权限管理',
+        label: '权限管理',
         children: [
           {
             key: '/rbac/users',
@@ -155,11 +155,31 @@ describe('menuFilter 菜单过滤纯逻辑与分组 Key 收集', () => {
   });
 
   it('9. 关键字匹配大小写不敏感、前后空格被容忍', () => {
-    const result1 = filterMenuItems(testMenuFixture, '  rbac  ', () => true);
-    const result2 = filterMenuItems(testMenuFixture, '  rBaC  ', () => true);
+    // 分组 label 已改为中文，大小写归一化（menuFilter 内部的 toLowerCase）改用带英文 label 的项单独验证，
+    // 避免因文案本地化而丢掉这条覆盖
+    const itemsWithEnglishLabel: DomainMenuItem[] = [
+      {
+        key: 'audit-group',
+        label: 'Audit Center',
+        children: [
+          {
+            key: '/audit/logs',
+            label: 'Audit Log',
+            permission: 'audit:log:read',
+          },
+        ],
+      },
+    ];
+    const result1 = filterMenuItems(itemsWithEnglishLabel, '  audit center  ', () => true);
+    const result2 = filterMenuItems(itemsWithEnglishLabel, '  AuDiT CeNtEr  ', () => true);
     expect(result1).toHaveLength(1);
-    expect(result1[0].key).toBe('rbac-group');
+    expect(result1[0].key).toBe('audit-group');
     expect(result1).toEqual(result2);
+
+    // 中文 label 的分组同样容忍前后空格
+    const chinese = filterMenuItems(testMenuFixture, '  权限管理  ', () => true);
+    expect(chinese).toHaveLength(1);
+    expect(chinese[0].key).toBe('rbac-group');
   });
 
   it('10. 分组自带 permission 且无权限 → 整组消失', () => {
@@ -193,7 +213,7 @@ describe('menuFilter 菜单过滤纯逻辑与分组 Key 收集', () => {
       { key: '/dashboard', label: '控制台概览' },
       {
         key: 'rbac-group',
-        label: 'RBAC 权限管理',
+        label: '权限管理',
         children: [{ key: '/rbac/users', label: '用户管理' }],
       },
       { key: 'empty-group', label: '空分组', children: [] },

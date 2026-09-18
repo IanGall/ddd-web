@@ -12,7 +12,7 @@ import type { DomainMenuItem } from '@/layout/menuFilter';
 export const menuItems: DomainMenuItem[] = [
   {
     key: 'rbac-group',
-    label: 'RBAC 权限管理',
+    label: '权限管理',
     icon: <ShieldCheck />,
     children: [
       {

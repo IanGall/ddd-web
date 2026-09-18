@@ -86,7 +86,7 @@ describe('AppLayout 布局与菜单交互', () => {
     renderAppLayout();
 
     // 验证分组标签渲染
-    expect(screen.getByText('RBAC 权限管理')).toBeInTheDocument();
+    expect(screen.getByText('权限管理')).toBeInTheDocument();
     expect(screen.getByText('平台凭证')).toBeInTheDocument();
 
     // 验证叶子菜单项渲染
@@ -112,7 +112,7 @@ describe('AppLayout 布局与菜单交互', () => {
 
     // 命中项及其分组保留
     expect(screen.getByText('角色管理')).toBeInTheDocument();
-    expect(screen.getByText('RBAC 权限管理')).toBeInTheDocument();
+    expect(screen.getByText('权限管理')).toBeInTheDocument();
 
     // 未命中项消失
     expect(screen.queryByText('用户管理')).toBeNull();
@@ -160,7 +160,7 @@ describe('AppLayout 布局与菜单交互', () => {
     fireEvent.change(searchInput, { target: { value: '' } });
 
     expect(screen.getByText('控制台概览')).toBeInTheDocument();
-    expect(screen.getByText('RBAC 权限管理')).toBeInTheDocument();
+    expect(screen.getByText('权限管理')).toBeInTheDocument();
     expect(screen.getByText('用户管理')).toBeInTheDocument();
     expect(screen.getByText('角色管理')).toBeInTheDocument();
     expect(screen.getByText('权限项管理')).toBeInTheDocument();
@@ -178,10 +178,10 @@ describe('AppLayout 布局与菜单交互', () => {
     renderAppLayout();
 
     const searchInput = screen.getByPlaceholderText('搜索菜单');
-    fireEvent.change(searchInput, { target: { value: '  rbac  ' } });
+    fireEvent.change(searchInput, { target: { value: '  权限管理  ' } });
 
-    // 容忍前后空格及小写，命中 RBAC 权限管理分组及旗下已授权子项
-    expect(screen.getByText('RBAC 权限管理')).toBeInTheDocument();
+    // 容忍前后空格，模糊匹配命中「权限管理」分组及旗下已授权子项
+    expect(screen.getByText('权限管理')).toBeInTheDocument();
     expect(screen.getByText('用户管理')).toBeInTheDocument();
     expect(screen.getByText('角色管理')).toBeInTheDocument();
     expect(screen.getByText('权限项管理')).toBeInTheDocument();
