@@ -3,7 +3,6 @@ import type {
   AdminLoginRequest,
   AuthSessionDTO,
   GatewayStatusDTO,
-  RefreshRequest,
   TokenResponse,
 } from './types';
 
@@ -18,14 +17,6 @@ export const authApi = {
    */
   login: (data: AdminLoginRequest): Promise<TokenResponse> => {
     return request.post<TokenResponse>('/api/admin/auth/login', data);
-  },
-
-  /**
-   * 刷新令牌
-   * POST /api/admin/auth/refresh
-   */
-  refresh: (data: RefreshRequest): Promise<TokenResponse> => {
-    return request.post<TokenResponse>('/api/admin/auth/refresh', data);
   },
 
   /**

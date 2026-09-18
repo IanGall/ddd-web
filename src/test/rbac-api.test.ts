@@ -81,13 +81,6 @@ describe('rbacApi - 用户管理接口', () => {
     });
   });
 
-  it('getUserById 应请求正确路径', async () => {
-    vi.mocked(request.get).mockResolvedValueOnce({ id: '2', username: 'sub1' });
-    const user = await rbacApi.getUserById('2');
-    expect(request.get).toHaveBeenCalledWith('/api/admin/rbac/users/2');
-    expect(user.id).toBe('2');
-  });
-
   it('createUser 应正确发送 POST 请求', async () => {
     const payload = {
       username: 'operator',

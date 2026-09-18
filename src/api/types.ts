@@ -48,14 +48,6 @@ export interface AdminLoginRequest {
   deviceId?: string;
 }
 
-/**
- * 令牌刷新请求体
- */
-export interface RefreshRequest {
-  refreshToken: string;
-  clientType?: string;
-  deviceId?: string;
-}
 
 /**
  * 会话信息 DTO

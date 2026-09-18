@@ -11,17 +11,14 @@ import { rbacApi } from '@/api/rbac';
 vi.mock('@/api/rbac', () => ({
   rbacApi: {
     getUsers: vi.fn(),
-    getUserById: vi.fn(),
     createUser: vi.fn(),
     updateUser: vi.fn(),
     deleteUser: vi.fn(),
     getRoles: vi.fn(),
-    getRoleById: vi.fn(),
     createRole: vi.fn(),
     updateRole: vi.fn(),
     deleteRole: vi.fn(),
     getPermissions: vi.fn(),
-    getPermissionById: vi.fn(),
     createPermission: vi.fn(),
     updatePermission: vi.fn(),
     deletePermission: vi.fn(),

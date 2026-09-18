@@ -202,14 +202,6 @@ export const rbacApi = {
   },
 
   /**
-   * 根据 ID 查询用户详情
-   * GET /api/admin/rbac/users/{id}
-   */
-  getUserById: (id: string): Promise<RbacUserDTO> => {
-    return request.get<RbacUserDTO>(`/api/admin/rbac/users/${id}`);
-  },
-
-  /**
    * 新增用户
    * POST /api/admin/rbac/users
    */
@@ -245,14 +237,6 @@ export const rbacApi = {
   },
 
   /**
-   * 根据 ID 查询角色详情
-   * GET /api/admin/rbac/roles/{id}
-   */
-  getRoleById: (id: string): Promise<RbacRoleDTO> => {
-    return request.get<RbacRoleDTO>(`/api/admin/rbac/roles/${id}`);
-  },
-
-  /**
    * 新增角色
    * POST /api/admin/rbac/roles
    */
@@ -285,14 +269,6 @@ export const rbacApi = {
     return request.get<PageResponse<RbacPermissionDTO>>('/api/admin/rbac/permissions', {
       params: cleanParams(params as Record<string, unknown>),
     });
-  },
-
-  /**
-   * 根据 ID 查询权限项详情
-   * GET /api/admin/rbac/permissions/{id}
-   */
-  getPermissionById: (id: string): Promise<RbacPermissionDTO> => {
-    return request.get<RbacPermissionDTO>(`/api/admin/rbac/permissions/${id}`);
   },
 
   /**
