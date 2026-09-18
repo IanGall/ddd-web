@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# 同一分支的新提交取消进行中的旧构建，避免重复消耗
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # 仓库未声明 packageManager 字段，这里显式锁定 pnpm 版本，保证 CI 与本地一致
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4
+        with:
+          version: '12.4.2'
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: 代码检查
+        run: pnpm lint
+
+      - name: 单元测试
+        run: pnpm test
+
+      - name: 生产构建
+        run: pnpm build
+
+      - name: 样式红线检查
+        run: pnpm check-style
